@@ -1,0 +1,5 @@
+[book]
+authors = ["The FloatingOrca Team"]
+language = "en"
+src = "src"
+title = "FloatingOrca"

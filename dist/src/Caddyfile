@@ -1,0 +1,25 @@
+{
+	http_port 8080
+	auto_https disable_redirects
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+http://deployer.florca.localhost:8080, http://deployer.*.sslip.io:8080 {
+	basic_auth {
+		root $2a$14$eQXj7oejvg1mE9EZS19Ywu38oNWshDsvA6sGr6fOTnnsgREZI.0Tm
+	}
+	reverse_proxy deployer.florca.localhost:8000
+}
+
+http://engine.florca.localhost:8080, http://engine.*.sslip.io:8080 {
+	basic_auth {
+		root $2a$14$eQXj7oejvg1mE9EZS19Ywu38oNWshDsvA6sGr6fOTnnsgREZI.0Tm
+	}
+	reverse_proxy engine.florca.localhost:8001
+}
+
+# Fallback
+http://, https:// {
+  log
+  respond 418
+}

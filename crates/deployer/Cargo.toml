@@ -1,0 +1,38 @@
+[package]
+name = "florca-deployer"
+version = "0.7.0"
+edition = "2024"
+
+[dependencies]
+florca-core = { path = "../core" }
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+axum = { workspace = true, features = ["multipart"] }
+chrono = { workspace = true }
+derive_more = { workspace = true }
+dotenvy = { workspace = true }
+futures = { workspace = true }
+fs_extra = { workspace = true }
+itertools = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sqlx = { workspace = true }
+tempfile = { workspace = true }
+testcontainers-modules = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+toml = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+walkdir = { workspace = true }
+zip = { workspace = true }
+zip-extensions = { workspace = true }
+aws-config = "1.8.6"
+aws-sdk-lambda = "1.96.0"
+chksum = "0.4.0"
+tokio-util = "0.7.16"
+
+[lints.clippy]
+pedantic = "warn"
+missing_errors_doc = "allow"

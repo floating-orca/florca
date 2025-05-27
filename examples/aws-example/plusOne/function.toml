@@ -1,0 +1,5 @@
+provider = "aws"
+handler = "index.handler"
+runtime = "python3.12"
+memory = 128
+timeout = 3

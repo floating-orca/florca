@@ -1,0 +1,73 @@
+services:
+
+  caddy:
+    image: docker.io/library/caddy:2.10
+    cap_add:
+      - NET_ADMIN
+    extra_hosts:
+      - "deployer.florca.localhost:host-gateway"
+      - "engine.florca.localhost:host-gateway"
+    ports:
+      - "8080:8080"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+  deployer:
+    image: ghcr.io/floating-orca/deployer:0.7.0
+    depends_on:
+      postgres:
+        condition: service_started
+    environment:
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_REGION
+      - AWS_ROLE
+      - DEPLOYER_DATABASE_URL=postgres://postgres:mysecretpassword@postgres/deployer
+      - PORT=8080
+    ports:
+      - "8000:8080"
+    restart: unless-stopped
+    volumes:
+      - ~/.aws:/root/.aws:ro
+
+  engine:
+    image: ghcr.io/floating-orca/engine:0.7.0
+    depends_on:
+      postgres:
+        condition: service_started
+    environment:
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_REGION
+      - AWS_ROLE
+      - BASIC_AUTH_USERNAME=${BASIC_AUTH_USERNAME}
+      - BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD}
+      - DEPLOYER_URL=http://deployer:8080
+      - ENGINE_URL=${ENGINE_URL}
+      - ENGINE_DATABASE_URL=postgres://postgres:mysecretpassword@postgres/engine
+      - PORT=8080
+    extra_hosts:
+      - "engine.florca.localhost:host-gateway"
+    ports:
+      - "8001:8080"
+    restart: unless-stopped
+    volumes:
+      - ~/.aws:/root/.aws:ro
+
+  postgres:
+    image: docker.io/library/postgres:17.6
+    environment:
+      POSTGRES_PASSWORD: "mysecretpassword"
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    volumes:
+      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
+
+volumes:
+  caddy_data:
+  caddy_config:

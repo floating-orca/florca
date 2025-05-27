@@ -1,0 +1,14 @@
+{
+  "name": "@florca/driver",
+  "version": "0.7.0",
+  "exports": {},
+  "imports": {
+    "@aws-sdk/client-lambda": "npm:@aws-sdk/client-lambda@^3.879.0",
+    "@db/postgres": "jsr:@db/postgres@^0.19.5",
+    "@std/dotenv": "jsr:@std/dotenv@^0.225.5",
+    "@std/expect": "jsr:@std/expect@^1.0.17",
+    "@std/io": "jsr:@std/io@^0.225.2",
+    "@std/path": "jsr:@std/path@^1.1.2",
+    "hono": "jsr:@hono/hono@^4.9.5"
+  }
+}

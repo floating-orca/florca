@@ -1,0 +1,5 @@
+{
+  "name": "@florca/fn",
+  "version": "0.7.0",
+  "exports": "./mod.ts"
+}

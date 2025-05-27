@@ -1,0 +1,9 @@
+*.drawio.bkp
+
+/dist/build/
+/target/
+/workflows/
+/.env
+/.env.local
+/Caddyfile
+/florca

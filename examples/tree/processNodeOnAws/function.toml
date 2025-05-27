@@ -1,0 +1,5 @@
+provider = "aws"
+runtime = "nodejs20.x"
+handler = "index.handler"
+memory = 128
+timeout = 3

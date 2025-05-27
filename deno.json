@@ -1,0 +1,3 @@
+{
+  "workspace": ["./packages/fn", "./packages/driver", "./packages/types"]
+}

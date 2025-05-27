@@ -1,0 +1,15 @@
+services:
+
+  deployer:
+    build:
+      context: .
+      dockerfile: ./crates/deployer/Dockerfile
+      tags:
+        - ghcr.io/floating-orca/deployer:latest
+
+  engine:
+    build:
+      context: .
+      dockerfile: ./crates/engine/Dockerfile
+      tags:
+        - ghcr.io/floating-orca/engine:latest

@@ -1,0 +1,23 @@
+mod completions;
+mod delete;
+mod deploy;
+mod info;
+mod inspect;
+mod kill;
+mod list;
+mod new;
+mod ps;
+mod run;
+mod templates;
+
+pub use completions::CompletionsCommand;
+pub use delete::DeleteCommand;
+pub use deploy::DeployCommand;
+pub use info::InfoCommand;
+pub use inspect::InspectCommand;
+pub use kill::KillCommand;
+pub use list::ListCommand;
+pub use new::NewCommand;
+pub use ps::PsCommand;
+pub use run::RunCommand;
+pub use templates::TemplatesCommand;

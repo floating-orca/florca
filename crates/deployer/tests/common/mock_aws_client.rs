@@ -1,0 +1,68 @@
+use anyhow::Result;
+use florca_core::function::AwsFunctionConfig;
+use florca_deployer::aws::{
+    AwsClient,
+    aws_qualifier::{Arn, AwsFunctionQualifier},
+};
+use std::{path::Path, sync::Arc};
+use tokio::sync::RwLock;
+
+#[derive(Debug)]
+pub struct MockAwsClient {
+    pub functions: Arc<RwLock<Vec<AwsFunctionQualifier>>>,
+}
+
+impl MockAwsClient {
+    pub fn new() -> Self {
+        Self {
+            functions: Arc::new(RwLock::new(vec![])),
+        }
+    }
+}
+
+#[async_trait::async_trait]
+impl AwsClient for MockAwsClient {
+    async fn create_function(
+        &self,
+        aws_function_qualifier: &AwsFunctionQualifier,
+        _aws_function_config: &AwsFunctionConfig,
+        _zip_path: &Path,
+    ) -> Result<Arn> {
+        let mut functions = self.functions.write().await;
+        functions.push(aws_function_qualifier.clone());
+        Ok(Arn(format!(
+            "arn:aws:lambda:eu-central-1:123456789012:function:{aws_function_qualifier}"
+        )))
+    }
+
+    async fn find_deployed_function(
+        &self,
+        aws_function_qualifier: &AwsFunctionQualifier,
+    ) -> Result<Option<Arn>> {
+        let functions = self.functions.read().await;
+        let arn = functions
+            .iter()
+            .find(|f| f == &aws_function_qualifier)
+            .map(|f| {
+                Arn(format!(
+                    "arn:aws:lambda:eu-central-1:123456789012:function:{f}"
+                ))
+            });
+        Ok(arn)
+    }
+
+    async fn update_function(
+        &self,
+        _aws_function_qualifier: &AwsFunctionQualifier,
+        _aws_function_config: &AwsFunctionConfig,
+        _zip_path: &Path,
+    ) -> Result<()> {
+        Ok(())
+    }
+
+    async fn delete_function(&self, aws_function_qualifier: &AwsFunctionQualifier) -> Result<()> {
+        let mut functions = self.functions.write().await;
+        functions.retain(|f| f != aws_function_qualifier);
+        Ok(())
+    }
+}
