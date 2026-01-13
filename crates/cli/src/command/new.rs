@@ -161,7 +161,7 @@ mod tests {
         let new_function_args = NewFunctionSubcommand {
             name: "test_function".to_string(),
             provider: Provider::Aws,
-            runtime: "nodejs22.x".to_string(),
+            runtime: "nodejs24.x".to_string(),
             arbitrary: false,
         };
         let command = NewCommand {
@@ -196,7 +196,7 @@ mod tests {
         .unwrap();
         let expected_function_toml_content =
             toml::to_string_pretty(&FunctionConfig::Aws(AwsFunctionConfig {
-                runtime: "nodejs22.x".to_string(),
+                runtime: "nodejs24.x".to_string(),
                 handler: "index.handler".to_string(),
                 memory: 128,
                 timeout: 3,

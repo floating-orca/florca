@@ -42,7 +42,7 @@ Returning a `next` object instead of a string is an alternative way to specify t
 Parameters passed in that way are available to the next function via `requestBody.context.params`.
 
 The `map` implementation specifically expects two properties: `fn` and `reduce`.
-It's implementation is quite simple:
+Its implementation is quite simple:
 
 ```typescript
 {{#include ../../../packages/driver/lib/functions/map.ts}}

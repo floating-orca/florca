@@ -51,14 +51,14 @@ Let's start off by generating a workflow with a few functions:
 
 ```bash
 florca new -w workflows/aws-example plugin "start"
-florca new -w workflows/aws-example function -p aws -r "python3.13" "plusOne"
+florca new -w workflows/aws-example function -p aws -r "python3.14" "plusOne"
 florca new -w workflows/aws-example plugin "double"
 ```
 
 This will create a workflow directory `workflows/aws-example` with the following functions:
 
 - `start` (plugin)
-- `plusOne` (AWS Lambda function using the `python3.13` runtime)
+- `plusOne` (AWS Lambda function using the `python3.14` runtime)
 - `double` (plugin)
 
 <div class="warning">

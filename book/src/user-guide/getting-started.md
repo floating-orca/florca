@@ -156,6 +156,12 @@ florca --help
 
 _Note that `--help` can be passed to any subcommand._
 
+For completion scripts (for Bash, Zsh, Fish, Elvish, or PowerShell), run:
+
+```bash
+florca completions --help
+```
+
 ### Create, deploy, and run a single-function workflow
 
 To test the setup, take the following steps:

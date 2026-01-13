@@ -99,7 +99,7 @@ mod tests {
         let function_toml = function_dir.join("function.toml");
         let config = toml::toml! {
             provider = "aws"
-            runtime = "nodejs22.x"
+            runtime = "nodejs24.x"
             handler = "index.handler"
             memory = 128
             timeout = 30
@@ -180,7 +180,7 @@ mod tests {
         else {
             panic!("Expected AwsFunctionConfig");
         };
-        assert_eq!(runtime, "nodejs22.x", "Runtime should match");
+        assert_eq!(runtime, "nodejs24.x", "Runtime should match");
         assert_eq!(handler, "index.handler", "Handler should match");
         assert_eq!(*memory, 128, "Memory should match");
         assert_eq!(*timeout, 30, "Timeout should match");
