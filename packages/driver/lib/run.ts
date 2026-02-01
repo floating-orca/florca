@@ -110,8 +110,8 @@ function findLookupEntry(functionName: string): LookupEntry {
 
 async function createInvocation(invokeArgs: InvokeArgs) {
   const startTime = new Date().toISOString();
-  const input = JSON.stringify(invokeArgs.input);
-  const params = JSON.stringify(invokeArgs.params);
+  const input = JSON.stringify(invokeArgs.input ?? null);
+  const params = JSON.stringify(invokeArgs.params ?? null);
   using client = await globalThis.Pool.connect();
   const { rows } = await client.queryObject<{ id: number }>(
     "insert into invocations (parent, predecessor, run_id, function_name, input, params, start_time) values ($1, $2, $3, $4, $5, $6, $7) returning id",

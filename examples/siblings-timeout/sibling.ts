@@ -4,10 +4,10 @@ import { sendMessage, sendMessageToParent } from "@florca/fn";
 export default async (
   requestBody: PluginRequestBody,
 ): Promise<ResponseBody> => {
-  const { context, payload } = requestBody;
+  const { context, payload: { i, delay } } = requestBody;
 
   // Simulate a delay on even-numbered invocations
-  if (payload % 2 === 0) {
+  if (i % 2 === 0) {
     await new Promise((resolve) => {
       setTimeout(resolve, 1000);
     });
@@ -31,7 +31,7 @@ export default async (
   ids = await sendMessageToParent(context.id, context);
 
   // Simulate a delay on odd-numbered invocations
-  if (payload % 2 === 1) {
+  if (i % 2 === 1) {
     await new Promise((resolve) => {
       setTimeout(resolve, 1000);
     });
@@ -41,13 +41,13 @@ export default async (
   ids = ids.filter((id) => id !== context.id);
 
   // Send this invocation's ID to each sibling
-  await Promise.all(ids.map((id) => sendMessage(payload, id, context)));
+  await Promise.all(ids.map((id) => sendMessage(i, id, context)));
 
   // Wait for all sibling invocations to send their numbers
   const numbers = (await messages).map((message) => parseInt(message));
 
   // Uncomment the following line to test the parent's timeout
-  // await new Promise((resolve) => { setTimeout(resolve, 10000); });
+  await new Promise((resolve) => { setTimeout(resolve, delay); });
 
   return {
     // Sum the received numbers and return the result

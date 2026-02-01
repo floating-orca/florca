@@ -13,31 +13,39 @@ There is also a `Dockerfile` for the `florca` CLI located at `crates/cli/Dockerf
 
 ## End-to-end test image
 
-Furthermore, in the `e2e` directory at the root of the repository, there is a `Dockerfile` for building an end-to-end test image, which allows you to run the platform and its dependencies in a single container. This can be useful for testing the functionality of _FloatingOrca_ in a controlled environment and is also used for running an end-to-end test.
+Furthermore, in the `e2e` directory at the root of the repository, there is a `Dockerfile` for building an end-to-end test image, which allows you to run the platform and its dependencies in a single container. This can be useful for testing the functionality of _FloatingOrca_ in a controlled environment and is also used for running end-to-end tests.
 
 ### Building the end-to-end test image
 
 To build the end-to-end test image, run the following command from the root of the repository:
 
 ```bash
-docker build -f e2e/Dockerfile . -t florca-e2e
+e2e/build.sh
 ```
 
-### Running the end-to-end test
+### Running end-to-end tests of example workflows
 
-To execute the end-to-end test, run:
+Many of the workflows in the `examples` directory ship with [Bats](https://bats-core.readthedocs.io/en/stable/) end-to-end tests, usually found in a `test.bats` file within the workflow's directory.
+
+To run the entire suite of end-to-end tests, execute the following command:
 
 ```bash
-docker run --rm florca-e2e
+examples/test.sh
 ```
 
-This will deploy the `siblings` example workflow, run it, and verify the output.
+_Pass `--help` to the script for more options, such as running tests for a specific workflow._
 
-Alternatively, you can run the following command to build and test in one go:
+### Running other end-to-end tests
+
+Of course, you can also run end-to-end tests for other workflows that are not in the `examples` directory:
 
 ```bash
-./e2e/build-and-test.sh
+docker run --rm -it \
+  -v $(pwd)/workflows:/workflows \              
+  florca-e2e bats -r /workflows/some-workflow
 ```
+
+_This example assumes `some-workflow` contains a file ending with `.bats` that defines the end-to-end tests for that workflow._
 
 ### Interactive shell
 

@@ -8,6 +8,7 @@ _See the [Upgrade](../user-guide/upgrade.md) chapter for instructions on how to 
 - Bump AWS Lambda runtimes
   - Support for Node.js 20.x in AWS Lambda ends on April 30, 2026
 - Update Rust, Deno, and dependencies
+- Revise end-to-end test setup
 
 ### Breaking changes
 

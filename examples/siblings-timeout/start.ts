@@ -5,7 +5,7 @@ const NUMBER_OF_CHILDREN = 5;
 export default async (
   requestBody: PluginRequestBody,
 ): Promise<ResponseBody> => {
-  const { context } = requestBody;
+  const { context, payload: { delay } } = requestBody;
 
   // Collect the IDs of the sibling invocations.
   // Only respond once all IDs have been collected.
@@ -22,7 +22,7 @@ export default async (
 
   // Invoke the sibling function NUMBER_OF_CHILDREN times
   const invocations: Promise<string>[] = [...Array(NUMBER_OF_CHILDREN).keys()]
-    .map((i) => context.run("sibling", i));
+    .map((i) => context.run("sibling", { i, delay }));
 
   // Wait for all invocations to complete or timeout
   const results = await new Promise((resolve, reject) => {

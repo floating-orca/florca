@@ -57,10 +57,10 @@ The response will look something like this:
     "children": [],
     "next": null
   },
-  "runStatus": "Success"
+  "runStatus": "success"
 }
 ```
 
-While the workflow is running, `runStatus` will be `Running`. If the workflow failed, it will be `Error` and `output` will contain details about the error.
+While the workflow is running, `runStatus` will be `running`. If the workflow failed, it will be `error` and `output` will contain details about the error.
 
 Also note the `children` array and `next` field in the `root` object. If present, they would be structured the same way as the `root` object. `root` essentially represents the entry point invocation of the workflow run.

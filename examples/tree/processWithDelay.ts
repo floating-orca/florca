@@ -38,6 +38,6 @@ export default async (
 
   const results = await Promise.all(promises);
   return {
-    payload: results,
+    payload: results.flat(),
   };
 };

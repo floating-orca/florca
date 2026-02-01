@@ -30,7 +30,11 @@ RUN apt-get update && apt-get install -y \
   && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg \
   && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
 RUN apt-get update && apt-get install -y \
+  bats \
+  bats-support \
+  bats-assert \
   caddy \
+  jq \
   netcat-traditional \
   postgresql \
   postgresql-client \
@@ -54,6 +58,3 @@ COPY dist/src/Caddyfile Caddyfile
 COPY e2e/container-scripts e2e/container-scripts
 RUN e2e/container-scripts/initdb.sh
 ENTRYPOINT ["e2e/container-scripts/entrypoint.sh"]
-
-COPY examples/siblings examples/siblings
-CMD ["e2e/container-scripts/test.sh"]

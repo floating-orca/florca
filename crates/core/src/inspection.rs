@@ -23,6 +23,7 @@ pub struct Inspection {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum RunStatus {
     Error,
     Running,
