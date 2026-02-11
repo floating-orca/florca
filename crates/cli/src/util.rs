@@ -19,7 +19,7 @@ pub fn parse_json(s: &str) -> Result<Value> {
 pub fn validate_path_exists(s: &str) -> Result<PathBuf> {
     let path = PathBuf::from(s);
     if !path.exists() {
-        anyhow::bail!("Path does not exist: {}", s);
+        anyhow::bail!("Path does not exist: {s}");
     }
     Ok(path)
 }

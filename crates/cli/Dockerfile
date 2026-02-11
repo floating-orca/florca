@@ -1,4 +1,4 @@
-FROM docker.io/library/rust:1.90-trixie AS build
+FROM docker.io/library/rust:1.94-trixie AS build
 
 WORKDIR /usr/src/florca
 

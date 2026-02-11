@@ -56,7 +56,7 @@ pub async fn deploy_aws_function(
 
 fn zip_aws_function(implementation_path: &PathBuf) -> Result<NamedTempFile> {
     let named_zip_file = tempfile::NamedTempFile::with_suffix(".zip")?;
-    zip_extensions::zip_create_from_directory(
+    zip_extensions::zip_writer::zip_create_from_directory(
         &named_zip_file.path().to_path_buf(),
         implementation_path,
     )?;

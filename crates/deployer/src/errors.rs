@@ -1,6 +1,5 @@
 use florca_core::deployment::DeploymentName;
 use std::path::PathBuf;
-use tracing::error;
 
 #[derive(Debug, thiserror::Error)]
 #[error(transparent)]

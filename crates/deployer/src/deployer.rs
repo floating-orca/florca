@@ -93,7 +93,7 @@ impl Deployer {
 
         self.repository
             .insert_deployment_with_functions(&CreateDeploymentParams::new(
-                deployment_name.as_ref().to_string(),
+                deployment_name.as_ref().clone(),
                 functions_to_create,
             ))
             .await?;

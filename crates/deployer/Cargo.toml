@@ -28,10 +28,10 @@ tracing-subscriber = { workspace = true }
 walkdir = { workspace = true }
 zip = { workspace = true }
 zip-extensions = { workspace = true }
-aws-config = "1.8.6"
-aws-sdk-lambda = "1.96.0"
+aws-config = "1.8.15"
+aws-sdk-lambda = "1.119.0"
 chksum = "0.4.0"
-tokio-util = "0.7.16"
+tokio-util = "0.7.18"
 
 [lints.clippy]
 pedantic = "warn"

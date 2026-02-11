@@ -80,7 +80,7 @@ fn create_function(
 
     let function_path = workflow_directory.join(name);
     if function_path.exists() {
-        bail!("Function {} already exists", name);
+        bail!("Function {name} already exists");
     }
 
     let template_files = util::template::get_function_template(*provider, runtime);
@@ -126,7 +126,7 @@ fn create_plugin(new_plugin_args: &NewPluginSubcommand, workflow_directory: &Pat
 
     let function_path = workflow_directory.join(name).with_extension("ts");
     if function_path.exists() {
-        bail!("Function {} already exists", name);
+        bail!("Function {name} already exists");
     }
 
     fs::create_dir_all(workflow_directory)?;

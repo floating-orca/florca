@@ -69,7 +69,7 @@ impl KnClient for KnClientImpl {
         let exit_status = build_output.wait().await?;
 
         if !exit_status.success() {
-            anyhow::bail!("Error building Knative function {}", kn_function_qualifier);
+            anyhow::bail!("Error building Knative function {kn_function_qualifier}");
         }
 
         println!("Knative function {kn_function_qualifier} built successfully");
@@ -84,11 +84,7 @@ impl KnClient for KnClientImpl {
             .await;
 
         if let Err(e) = deploy_result {
-            anyhow::bail!(
-                "Error deploying Knative function {}: {}",
-                kn_function_qualifier,
-                e
-            );
+            anyhow::bail!("Error deploying Knative function {kn_function_qualifier}: {e}");
         } else if !deploy_result.as_ref().unwrap().status.success() {
             anyhow::bail!(
                 "Error deploying Knative function {}: {}",

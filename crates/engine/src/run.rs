@@ -114,7 +114,7 @@ impl RunService {
 
 fn extract(zip_named: &NamedTempFile) -> Result<TempDir> {
     let temporary_directory = TempDir::with_prefix("deployment-")?;
-    zip_extensions::zip_extract(
+    zip_extensions::zip_extract::zip_extract(
         &zip_named.path().to_path_buf(),
         &temporary_directory.path().to_path_buf(),
     )

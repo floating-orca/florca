@@ -1,4 +1,4 @@
-FROM docker.io/library/rust:1.90-trixie AS build
+FROM docker.io/library/rust:1.94-trixie AS build
 
 WORKDIR /usr/src/florca
 
@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /usr/src/florca
 
-COPY --from=docker.io/denoland/deno:bin-2.5.1 /deno /usr/local/bin/deno
+COPY --from=docker.io/denoland/deno:bin-2.7.9 /deno /usr/local/bin/deno
 COPY deno.json deno.lock ./
 # Ideally, we would install the dependencies here, but the `deno install` command fails with the following error:
 #   Could not find config file for workspace member in 'file:///usr/src/florca/packages/fn/'

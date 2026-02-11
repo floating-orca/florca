@@ -9,7 +9,7 @@ pub async fn pack_deployment(functions: Vec<FunctionEntity>) -> Result<File> {
     generate_lookup_file(&work_dir.path().join("lookup.json"), &functions).await?;
     query_blobs_and_write_files(&work_dir, functions).await?;
     let named_zip_file = NamedTempFile::with_suffix(".zip")?;
-    zip_extensions::zip_create_from_directory(
+    zip_extensions::zip_writer::zip_create_from_directory(
         &named_zip_file.path().to_path_buf(),
         &work_dir.path().to_path_buf(),
     )

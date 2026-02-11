@@ -39,7 +39,7 @@ async fn test_deploy_and_delete() -> Result<()> {
 
     let deployment_name = DeploymentName::from("test_deployment");
     let named_zip_file = NamedTempFile::with_suffix(".zip")?;
-    zip_extensions::zip_create_from_directory(
+    zip_extensions::zip_writer::zip_create_from_directory(
         &named_zip_file.path().to_path_buf(),
         &PathBuf::from("tests/data/aws-example_deployment"),
     )?;

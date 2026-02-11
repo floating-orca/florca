@@ -39,7 +39,7 @@ pub struct AwsClientImpl {
 
 impl AwsClientImpl {
     pub async fn new() -> Self {
-        let sdk_config = aws_config::defaults(BehaviorVersion::v2025_08_07())
+        let sdk_config = aws_config::defaults(BehaviorVersion::v2026_01_12())
             .load()
             .await;
         Self {
@@ -98,7 +98,7 @@ impl AwsClient for AwsClientImpl {
                     .as_ref()
                     .is_some_and(|n| n == aws_function_qualifier.as_ref())
             })
-            .map(|f| Arn(f.function_arn.clone().unwrap().to_string()));
+            .map(|f| Arn(f.function_arn.clone().unwrap().clone()));
         Ok(arn)
     }
 
