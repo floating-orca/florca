@@ -128,8 +128,8 @@ docker login ghcr.io
 Now you can pull the pre-built Docker images:
 
 ```bash
-docker pull ghcr.io/floating-orca/deployer:0.7.0
-docker pull ghcr.io/floating-orca/engine:0.7.0
+docker pull ghcr.io/floating-orca/deployer:0.8.0
+docker pull ghcr.io/floating-orca/engine:0.8.0
 ```
 
 ## Run the services

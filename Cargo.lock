@@ -1510,7 +1510,7 @@ dependencies = [
 
 [[package]]
 name = "florca"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1536,7 +1536,7 @@ dependencies = [
 
 [[package]]
 name = "florca-core"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "chrono",
  "clap",
@@ -1554,7 +1554,7 @@ dependencies = [
 
 [[package]]
 name = "florca-deployer"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1588,7 +1588,7 @@ dependencies = [
 
 [[package]]
 name = "florca-engine"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "anyhow",
  "async-trait",

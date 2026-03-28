@@ -2,6 +2,16 @@
 
 _See the [Upgrade](../user-guide/upgrade.md) chapter for instructions on how to upgrade to the latest version._
 
+## v0.8.0
+
+- Bump AWS Lambda runtimes
+  - Support for Node.js 20.x in AWS Lambda ends on April 30, 2026
+- Update Rust, Deno, and dependencies
+
+### Breaking changes
+
+When running FloatingOrca natively, make sure you are running at least Rust v1.94 and Deno v2.7.9.
+
 ## v0.7.0
 
 - Migrate the book to mdBook v0.5
