@@ -45,6 +45,10 @@ pub struct RunCommand {
     /// Show outputs from functions (requires --wait)
     #[arg(long, requires = "wait")]
     pub show_outputs: bool,
+
+    /// Output as JSON
+    #[arg(long)]
+    pub json: bool,
 }
 
 impl RunCommand {
@@ -64,21 +68,41 @@ impl RunCommand {
             anyhow::bail!(text);
         }
         let run_id = response.json::<RunId>()?;
-        println!("Run: {}", &run_id);
-        println!("{}", EngineUrl::path(&[&run_id.to_string()]));
-        if self.wait {
-            loop {
-                let inspection = util::inspection::get_inspection(&LatestOrRunId::RunId(run_id))?;
-                if !inspection.workflow_is_running() {
-                    let inspect_options = InspectDisplayOptions {
-                        show_inputs: self.show_inputs,
-                        show_params: self.show_params,
-                        show_outputs: self.show_outputs,
-                    };
-                    util::inspection::print_inspection(&inspection, &inspect_options);
-                    break;
+        if self.json {
+            if self.wait {
+                loop {
+                    let inspection =
+                        util::inspection::get_inspection(&LatestOrRunId::RunId(run_id))?;
+                    if !inspection.workflow_is_running() {
+                        println!("{}", serde_json::to_string_pretty(&inspection)?);
+                        break;
+                    }
+                    thread::sleep(Duration::from_secs(1));
                 }
-                thread::sleep(Duration::from_secs(1));
+            } else {
+                let obj = serde_json::json!({
+                    "runId": run_id.to_string(),
+                });
+                println!("{}", serde_json::to_string_pretty(&obj)?);
+            }
+        } else {
+            println!("Run: {}", &run_id);
+            println!("{}", EngineUrl::path(&[&run_id.to_string()]));
+            if self.wait {
+                loop {
+                    let inspection =
+                        util::inspection::get_inspection(&LatestOrRunId::RunId(run_id))?;
+                    if !inspection.workflow_is_running() {
+                        let inspect_options = InspectDisplayOptions {
+                            show_inputs: self.show_inputs,
+                            show_params: self.show_params,
+                            show_outputs: self.show_outputs,
+                        };
+                        util::inspection::print_inspection(&inspection, &inspect_options);
+                        break;
+                    }
+                    thread::sleep(Duration::from_secs(1));
+                }
             }
         }
         Ok(())

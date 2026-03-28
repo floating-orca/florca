@@ -4,6 +4,7 @@ _See the [Upgrade](../user-guide/upgrade.md) chapter for instructions on how to 
 
 ## v0.8.0
 
+- Add `--json` flags and a `message` command to the CLI
 - Bump AWS Lambda runtimes
   - Support for Node.js 20.x in AWS Lambda ends on April 30, 2026
 - Update Rust, Deno, and dependencies

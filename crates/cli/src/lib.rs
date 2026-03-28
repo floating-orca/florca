@@ -19,6 +19,7 @@ pub fn run(cli: Cli) -> Result<()> {
         Command::Inspect(command) => command.execute()?,
         Command::Kill(command) => command.execute()?,
         Command::List(command) => command.execute()?,
+        Command::Message(subcmd) => subcmd.execute()?,
         Command::New(command) => command.execute()?,
         Command::Ps(command) => command.execute()?,
         Command::Run(command) => command.execute()?,

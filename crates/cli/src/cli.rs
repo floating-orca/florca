@@ -1,6 +1,6 @@
 use crate::command::{
     CompletionsCommand, DeleteCommand, DeployCommand, InfoCommand, InspectCommand, KillCommand,
-    ListCommand, NewCommand, PsCommand, RunCommand, TemplatesCommand,
+    ListCommand, MessageCommand, NewCommand, PsCommand, RunCommand, TemplatesCommand,
 };
 use crate::util;
 use clap::{Args, Parser, Subcommand};
@@ -39,6 +39,8 @@ pub enum Command {
     Kill(KillCommand),
     /// List deployments
     List(ListCommand),
+    /// Interact with workflow message handlers
+    Message(MessageCommand),
     /// Create a new function
     New(NewCommand),
     /// List running workflows

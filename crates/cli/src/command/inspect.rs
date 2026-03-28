@@ -4,6 +4,7 @@ use anyhow::Result;
 use clap::Args;
 use florca_core::run::{LatestOrRunId, RunId};
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Args)]
 pub struct InspectCommand {
     #[command(flatten)]
@@ -20,6 +21,10 @@ pub struct InspectCommand {
     /// Show outputs from functions
     #[arg(short('o'), long)]
     pub show_outputs: bool,
+
+    /// Output the inspection data as JSON
+    #[arg(short, long, conflicts_with_all = ["show_inputs", "show_params", "show_outputs"])]
+    pub json: bool,
 }
 
 #[derive(Debug, Args)]
@@ -50,6 +55,11 @@ impl InspectCommand {
     pub fn execute(self) -> Result<()> {
         let latest_or_run_id = LatestOrRunId::from(self.latest_or_run_id_args);
         let inspection = util::inspection::get_inspection(&latest_or_run_id)?;
+        if self.json {
+            let json = serde_json::to_string_pretty(&inspection)?;
+            println!("{json}");
+            return Ok(());
+        }
         println!("Run: {}", inspection.run_id);
         if inspection.workflow_is_running() {
             println!("Status: running");
