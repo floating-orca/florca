@@ -17,6 +17,7 @@
 - [Knative functions](./user-guide/knative-functions.md)
 - [Self-hosting](./user-guide/self-hosting.md)
   - [Knative on a self-hosted server](./user-guide/knative-on-a-self-hosted-server.md)
+  - [Knative on a Kubernetes cluster](./user-guide/knative-on-a-kubernetes-cluster.md)
 - [Limitations](./user-guide/limitations.md)
 - [Upgrade](./user-guide/upgrade.md)
 
