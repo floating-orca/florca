@@ -7,7 +7,7 @@ import type {
   ReportReadinessRequest,
   RunId,
 } from "@florca/types";
-import { run } from "./run.ts";
+import { flushWriteQueue, run } from "./run.ts";
 import { resolve } from "@std/path";
 import { getPluginFilePath, namesOfShippedPlugins } from "./functions/mod.ts";
 
@@ -116,6 +116,8 @@ export async function runWorkflow(
     } else {
       throw e;
     }
+  } finally {
+    await flushWriteQueue();
   }
   return driverResult;
 }
