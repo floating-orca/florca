@@ -2,8 +2,8 @@ use crate::kn::kn_qualifier::{KnFunctionQualifier, KnUrl};
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use florca_core::function::KnFunctionConfig;
-use std::fmt::Debug;
 use std::env;
+use std::fmt::Debug;
 use std::{path::Path, process::Stdio};
 use tokio::process::Command;
 use tracing::{error, info};
@@ -56,8 +56,8 @@ impl KnClient for KnClientImpl {
         )
         .await?;
 
-        let registry = env::var("CONTAINER_REGISTRY")
-            .unwrap_or_else(|_| "localhost:5001".to_string());
+        let registry =
+            env::var("CONTAINER_REGISTRY").unwrap_or_else(|_| "localhost:5001".to_string());
 
         let mut build_output = Command::new("func")
             .arg("build")
