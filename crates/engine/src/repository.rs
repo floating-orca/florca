@@ -46,6 +46,8 @@ pub struct SqlxEngineRepository {
     pool: sqlx::PgPool,
 }
 
+const DEFAULT_MAX_CONNECTIONS: u32 = 20;
+
 impl SqlxEngineRepository {
     /// # Panics
     ///
@@ -53,12 +55,22 @@ impl SqlxEngineRepository {
     pub async fn setup() -> Result<Self> {
         let database_url =
             env::var("ENGINE_DATABASE_URL").expect("ENGINE_DATABASE_URL must be set");
-        Self::setup_with_database_url(&database_url).await
+
+        Self::setup_with_database_url_and_max_connections(&database_url, DEFAULT_MAX_CONNECTIONS)
+            .await
     }
 
     pub async fn setup_with_database_url(database_url: &str) -> Result<Self> {
+        Self::setup_with_database_url_and_max_connections(database_url, DEFAULT_MAX_CONNECTIONS)
+            .await
+    }
+
+    pub async fn setup_with_database_url_and_max_connections(
+        database_url: &str,
+        max_connections: u32,
+    ) -> Result<Self> {
         let pool = PgPoolOptions::new()
-            .max_connections(5)
+            .max_connections(max_connections)
             .connect(database_url)
             .await?;
         sqlx::migrate!("./migrations").run(&pool).await?;
