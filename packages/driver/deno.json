@@ -7,8 +7,7 @@
     "@db/postgres": "jsr:@db/postgres@^0.19.5",
     "@std/dotenv": "jsr:@std/dotenv@^0.225.6",
     "@std/expect": "jsr:@std/expect@^1.0.18",
-    "@std/io": "jsr:@std/io@^0.225.3",
     "@std/path": "jsr:@std/path@^1.1.4",
-    "hono": "jsr:@hono/hono@^4.12.9"
+    "@hono/hono": "jsr:@hono/hono@^4.12.9"
   }
 }

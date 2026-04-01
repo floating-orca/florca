@@ -1,4 +1,4 @@
-import { type Context, Hono } from "hono";
+import { type Context, Hono } from "@hono/hono";
 import type {
   DriverArgs,
   InvocationId,
