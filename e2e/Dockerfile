@@ -2,6 +2,8 @@ FROM docker.io/library/rust:1.94-trixie AS build
 
 WORKDIR /usr/src/florca
 
+ARG CARGO_PROFILE=dev
+
 RUN --mount=type=bind,source=.cargo,target=.cargo \
   --mount=type=bind,source=crates,target=crates \
   --mount=type=bind,source=templates,target=templates \
@@ -11,10 +13,24 @@ RUN --mount=type=bind,source=.cargo,target=.cargo \
   --mount=type=cache,target=/usr/local/cargo/registry/ \
   <<EOF
 set -e
-cargo build --release
-cp target/release/florca-deployer /usr/local/bin/florca-deployer
-cp target/release/florca-engine /usr/local/bin/florca-engine
-cp target/release/florca /usr/local/bin/florca
+case "${CARGO_PROFILE}" in
+  dev)
+    TARGET_DIR_NAME=debug
+    CARGO_BUILD_ARGS=""
+    ;;
+  release)
+    TARGET_DIR_NAME=release
+    CARGO_BUILD_ARGS="--release"
+    ;;
+  *)
+    echo "Invalid CARGO_PROFILE: ${CARGO_PROFILE}. Expected 'dev' or 'release'." >&2
+    exit 1
+    ;;
+esac
+cargo build ${CARGO_BUILD_ARGS}
+cp target/${TARGET_DIR_NAME}/florca-deployer /usr/local/bin/florca-deployer
+cp target/${TARGET_DIR_NAME}/florca-engine /usr/local/bin/florca-engine
+cp target/${TARGET_DIR_NAME}/florca /usr/local/bin/florca
 EOF
 
 # ---
@@ -43,6 +59,9 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /usr/src/florca
 
+COPY e2e/container-scripts e2e/container-scripts
+RUN e2e/container-scripts/initdb.sh
+
 COPY --from=docker.io/denoland/deno:bin-2.7.9 /deno /usr/local/bin/deno
 COPY deno.json deno.lock ./
 COPY packages packages
@@ -55,6 +74,4 @@ COPY --from=build /usr/local/bin/florca /usr/local/bin/florca
 COPY dist/src/.env .env
 COPY dist/src/Caddyfile Caddyfile
 
-COPY e2e/container-scripts e2e/container-scripts
-RUN e2e/container-scripts/initdb.sh
 ENTRYPOINT ["e2e/container-scripts/entrypoint.sh"]

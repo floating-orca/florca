@@ -2,24 +2,22 @@
 
 set -Eeuo pipefail
 
-{ 
-  caddy start --config Caddyfile
+mkdir -p /var/log/florca
 
-  sudo -u postgres /usr/lib/postgresql/17/bin/pg_ctl -D /var/lib/postgresql/data start
+caddy run --config Caddyfile > /var/log/florca/caddy.log 2>&1 &
 
-  florca info
+# shellcheck disable=SC2024
+sudo -u postgres /usr/lib/postgresql/17/bin/pg_ctl -D /var/lib/postgresql/data start > /var/log/florca/postgres.log 2>&1
 
-  florca-deployer &
-  florca-engine &
+florca-deployer > /var/log/florca/deployer.log 2>&1 &
+florca-engine > /var/log/florca/engine.log 2>&1 &
 
-  while ! nc -z localhost 8000; do
-      sleep 1
-  done
-  while ! nc -z localhost 8001; do
-      sleep 1
-  done
-
-} >/dev/null 2>&1
+while ! nc -z localhost 8000; do
+    sleep 1
+done
+while ! nc -z localhost 8001; do
+    sleep 1
+done
 
 if [ "$#" -gt 0 ]; then
   exec "$@"

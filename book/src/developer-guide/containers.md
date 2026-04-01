@@ -23,6 +23,12 @@ To build the end-to-end test image, run the following command from the root of t
 e2e/build.sh
 ```
 
+To build with Cargo's `release` profile instead of the default `dev` profile, set the `CARGO_PROFILE` environment variable to `release`:
+
+```bash
+CARGO_PROFILE=release e2e/build.sh
+```
+
 ### Running end-to-end tests of example workflows
 
 Many of the workflows in the `examples` directory ship with [Bats](https://bats-core.readthedocs.io/en/stable/) end-to-end tests, usually found in a `test.bats` file within the workflow's directory.
