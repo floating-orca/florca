@@ -139,11 +139,11 @@ impl DriverManager {
 
         match driver_result.result {
             DriverResultKind::Success(success_details) => {
-                self.finish_run(true, &success_details.value).await?;
+                self.finalize_run(true, &success_details.value).await?;
                 info!(run = run_id.to_string(), "Workflow run succeeded");
             }
             DriverResultKind::Error(error_details) => {
-                self.finish_run(false, &serde_json::to_value(&error_details)?)
+                self.finalize_run(false, &serde_json::to_value(&error_details)?)
                     .await?;
                 error!(run = run_id.to_string(), "Workflow run failed");
             }
@@ -152,9 +152,9 @@ impl DriverManager {
         Ok(())
     }
 
-    async fn finish_run(&self, success: bool, output: &Value) -> Result<()> {
+    async fn finalize_run(&self, success: bool, output: &Value) -> Result<()> {
         self.repository
-            .finish_run(success, self.run_id, output, Utc::now())
+            .finalize_run(success, self.run_id, output, Utc::now())
             .await?;
         Ok(())
     }

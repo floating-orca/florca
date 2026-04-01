@@ -5,6 +5,7 @@ use florca_core::run::{RunEntity, RunId, RunRequest};
 use serde_json::Value;
 use sqlx::postgres::PgPoolOptions;
 use std::{env, fmt::Debug};
+use tracing::debug;
 
 #[derive(Debug, thiserror::Error)]
 pub enum GetRunError {
@@ -22,7 +23,7 @@ pub trait EngineRepository: Debug + Send + Sync {
     async fn get_run_by_id(&self, run_id: RunId) -> Result<RunEntity, GetRunError>;
     async fn get_runs_without_end_time(&self) -> Result<Vec<RunEntity>>;
     async fn new_run(&self, run_request: &RunRequest, start_time: DateTime<Utc>) -> Result<RunId>;
-    async fn finish_run(
+    async fn finalize_run(
         &self,
         success: bool,
         run_id: RunId,
@@ -105,20 +106,30 @@ impl EngineRepository for SqlxEngineRepository {
         Ok(run_id)
     }
 
-    async fn finish_run(
+    async fn finalize_run(
         &self,
         success: bool,
         run_id: RunId,
         output: &Value,
         end_time: DateTime<Utc>,
     ) -> Result<()> {
-        sqlx::query("update runs set end_time = $1, success = $2, output = $3 where id = $4")
+        let result = sqlx::query(
+            "update runs set end_time = $1, success = $2, output = $3 where id = $4 and success is null and end_time is null",
+        )
             .bind(end_time)
             .bind(success)
             .bind(output)
             .bind(run_id)
             .execute(&self.pool)
             .await?;
+
+        if result.rows_affected() == 0 {
+            debug!(
+                run = run_id.to_string(),
+                "Run already finalized; skipping update"
+            );
+        }
+
         Ok(())
     }
 
