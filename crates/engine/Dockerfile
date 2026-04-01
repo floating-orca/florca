@@ -10,7 +10,7 @@ RUN --mount=type=bind,source=.cargo,target=.cargo \
   --mount=type=cache,target=/usr/local/cargo/registry/ \
   <<EOF
 set -e
-cargo build --locked --release -p florca-engine
+cargo build --release -p florca-engine
 cp target/release/florca-engine /usr/local/bin/florca-engine
 EOF
 

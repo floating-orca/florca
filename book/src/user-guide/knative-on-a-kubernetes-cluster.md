@@ -64,8 +64,8 @@ The following steps illustrate how you could achieve this on the server we set u
 - Build the deployer and engine services, and install the CLI:
 
   ```bash
-  cargo build --locked --release --bin florca-deployer
-  cargo build --locked --release --bin florca-engine
+  cargo build --release --bin florca-deployer
+  cargo build --release --bin florca-engine
   ```
 
 - Install kubectl:

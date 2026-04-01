@@ -11,7 +11,7 @@ RUN --mount=type=bind,source=.cargo,target=.cargo \
   --mount=type=cache,target=/usr/local/cargo/registry/ \
   <<EOF
 set -e
-cargo build --locked --release
+cargo build --release
 cp target/release/florca-deployer /usr/local/bin/florca-deployer
 cp target/release/florca-engine /usr/local/bin/florca-engine
 cp target/release/florca /usr/local/bin/florca

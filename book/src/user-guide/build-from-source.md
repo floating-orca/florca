@@ -58,9 +58,9 @@ Alternatively, closer to the development environment, you can run the services a
 2. Build the binaries for the deployer and the engine, and install the CLI:
 
    ```bash
-   cargo build --locked --release --bin florca-deployer
-   cargo build --locked --release --bin florca-engine
-   cargo install --locked --path crates/cli
+   cargo build --release --bin florca-deployer
+   cargo build --release --bin florca-engine
+   cargo install --path crates/cli
    ```
 
 3. Copy environment-specific files:
