@@ -90,7 +90,7 @@ docker push "ghcr.io/floating-orca/engine:latest"
 
 # publish
 read -rp "Press Enter to continue with publishing the assets"
-gh release create "v${version}" "${asset_filename}" --title "v${version}" --notes "Release v${version}"
+gh release create --repo floating-orca/florca "v${version}" "${asset_filename}" --title "v${version}" --notes ""
 
 # publish book
-gh release upload "v${version}" "${book_asset_filename}"
+gh release upload --repo floating-orca/florca "v${version}" "${book_asset_filename}"
