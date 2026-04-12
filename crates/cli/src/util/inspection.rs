@@ -4,7 +4,7 @@ use colored::Colorize;
 use florca_core::driver::DriverErrorDetails;
 use florca_core::http::{EngineUrl, RequestBuilderExt};
 use florca_core::inspection::{Inspection, InspectionEntry, RunStatus};
-use florca_core::run::LatestOrRunId;
+use florca_core::run::{LatestOrRunId, RunId};
 use reqwest::blocking::Client;
 use serde_json::Value;
 
@@ -23,6 +23,23 @@ pub fn get_inspection(latest_or_run_id: &LatestOrRunId) -> Result<Inspection> {
     }
     let inspection = response.json::<Inspection>()?;
     Ok(inspection)
+}
+
+/// # Errors
+///
+/// This function will return an error if the request to the server fails, the server returns an error, or the response cannot be parsed.
+pub fn get_status(run_id: RunId) -> Result<RunStatus> {
+    let url = EngineUrl::path(&[&run_id.to_string(), "status"]);
+    let response = Client::new().get(url).with_basic_auth_from_env().send()?;
+    if let Err(e) = response.error_for_status_ref() {
+        let text = response.text()?;
+        if text.is_empty() {
+            anyhow::bail!(e);
+        }
+        anyhow::bail!(text);
+    }
+    let status = response.json::<RunStatus>()?;
+    Ok(status)
 }
 
 #[derive(Debug)]

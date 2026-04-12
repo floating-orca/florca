@@ -20,6 +20,7 @@ pub async fn serve(shared_state: Arc<AppState>) -> Result<()> {
             "/{run}/inspection",
             get(inspection_endpoint::get_inspection),
         )
+        .route("/{run}/status", get(inspection_endpoint::get_status))
         .route("/{run}/invoke", post(run_endpoints::invoke_child))
         .route("/{run}/{id}", post(message_endpoints::to_function))
         .route("/{run}/{id}", get(message_endpoints::html_from_function))

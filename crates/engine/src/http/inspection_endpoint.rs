@@ -2,8 +2,8 @@ use crate::{AppState, error::GetInspectionError};
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::response::{IntoResponse, Response};
-use florca_core::inspection::Inspection;
-use florca_core::run::LatestOrRunId;
+use florca_core::inspection::{Inspection, RunStatus};
+use florca_core::run::{LatestOrRunId, RunId};
 use reqwest::StatusCode;
 use std::sync::Arc;
 use tracing::error;
@@ -17,6 +17,14 @@ pub async fn get_inspection(
         .get_inspection(latest_or_run_id)
         .await?;
     Ok(Json(inspection))
+}
+
+pub async fn get_status(
+    Path(run_id): Path<RunId>,
+    State(state): State<Arc<AppState>>,
+) -> axum::response::Result<Json<RunStatus>, GetInspectionError> {
+    let status = state.inspection_service.get_status(run_id).await?;
+    Ok(Json(status))
 }
 
 impl IntoResponse for GetInspectionError {

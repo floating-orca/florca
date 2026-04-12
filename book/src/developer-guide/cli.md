@@ -10,4 +10,8 @@ If you want to add a new command, make sure you adapt `crates/cli/src/lib.rs` ac
 ## Note on `florca run --wait`
 
 When you run `florca run` without `--wait`, the CLI will only print the ID of the workflow run but not wait for the run to complete.
-If you want to wait for the run to complete, you can use `--wait` or `-w`. Just note that the CLI will only check every second whether the run is complete or not.
+
+If you want to wait for the run to complete, you can use `--wait` or `-w`.
+
+Passing `--wait` will make the CLI poll the engine for the status of the run every second until it is no longer `running`.
+Only then will the CLI fetch the full inspection payload and print it to the console.

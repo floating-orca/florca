@@ -5,6 +5,7 @@ use clap::Args;
 use florca_core::deployment::DeploymentName;
 use florca_core::function::FunctionName;
 use florca_core::http::{EngineUrl, RequestBuilderExt};
+use florca_core::inspection::RunStatus;
 use florca_core::run::RunRequest;
 use florca_core::run::{LatestOrRunId, RunId};
 use reqwest::blocking::{Client, Response};
@@ -71,9 +72,10 @@ impl RunCommand {
         if self.json {
             if self.wait {
                 loop {
-                    let inspection =
-                        util::inspection::get_inspection(&LatestOrRunId::RunId(run_id))?;
-                    if !inspection.workflow_is_running() {
+                    let status = util::inspection::get_status(run_id)?;
+                    if status != RunStatus::Running {
+                        let inspection =
+                            util::inspection::get_inspection(&LatestOrRunId::RunId(run_id))?;
                         println!("{}", serde_json::to_string_pretty(&inspection)?);
                         break;
                     }
@@ -90,9 +92,10 @@ impl RunCommand {
             println!("{}", EngineUrl::path(&[&run_id.to_string()]));
             if self.wait {
                 loop {
-                    let inspection =
-                        util::inspection::get_inspection(&LatestOrRunId::RunId(run_id))?;
-                    if !inspection.workflow_is_running() {
+                    let status = util::inspection::get_status(run_id)?;
+                    if status != RunStatus::Running {
+                        let inspection =
+                            util::inspection::get_inspection(&LatestOrRunId::RunId(run_id))?;
                         let inspect_options = InspectDisplayOptions {
                             show_inputs: self.show_inputs,
                             show_params: self.show_params,

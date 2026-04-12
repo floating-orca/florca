@@ -1,11 +1,14 @@
 use crate::process::ProcessManager;
 use crate::repository::EngineRepository;
-use crate::{error::GetInspectionError, repository::GetRunError};
+use crate::{
+    error::GetInspectionError,
+    repository::{GetLatestRunError, GetRunByIdError},
+};
 use anyhow::{Context, Result};
 use florca_core::inspection::{Inspection, InspectionEntry, RunStatus};
 use florca_core::invocation::InvocationEntity;
 use florca_core::invocation::InvocationId;
-use florca_core::run::{LatestOrRunId, RunEntity};
+use florca_core::run::{LatestOrRunId, RunEntity, RunId};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -30,11 +33,10 @@ impl InspectionService {
         &self,
         latest_or_run_id: LatestOrRunId,
     ) -> Result<Inspection, GetInspectionError> {
-        let run = self.get_run(latest_or_run_id).await.map_err(|e| match e {
-            GetRunError::NoLatest => GetInspectionError::NoLatest,
-            GetRunError::NotFound(run_id) => GetInspectionError::NotFound(run_id),
-            GetRunError::Other(error) => GetInspectionError::Other(error),
-        })?;
+        let run = match latest_or_run_id {
+            LatestOrRunId::Latest => self.load_latest_run().await?,
+            LatestOrRunId::RunId(run_id) => self.load_run_by_id(run_id).await?,
+        };
         let inspection = self
             .build_inspection(run)
             .await
@@ -42,11 +44,33 @@ impl InspectionService {
         Ok(inspection)
     }
 
-    async fn get_run(&self, latest_or_run_id: LatestOrRunId) -> Result<RunEntity, GetRunError> {
-        match latest_or_run_id {
-            LatestOrRunId::Latest => self.repository.get_latest_run().await,
-            LatestOrRunId::RunId(run_id) => self.repository.get_run_by_id(run_id).await,
-        }
+    pub async fn get_status(&self, run_id: RunId) -> Result<RunStatus, GetInspectionError> {
+        let run = self.load_run_by_id(run_id).await?;
+        let status = self
+            .status_of_run(&run)
+            .await
+            .context("error getting run status")?;
+        Ok(status)
+    }
+
+    async fn load_latest_run(&self) -> Result<RunEntity, GetInspectionError> {
+        self.repository
+            .get_latest_run()
+            .await
+            .map_err(|error| match error {
+                GetLatestRunError::NoLatest => GetInspectionError::NoLatest,
+                GetLatestRunError::Other(error) => GetInspectionError::Other(error),
+            })
+    }
+
+    async fn load_run_by_id(&self, run_id: RunId) -> Result<RunEntity, GetInspectionError> {
+        self.repository
+            .get_run_by_id(run_id)
+            .await
+            .map_err(|error| match error {
+                GetRunByIdError::NotFound(run_id) => GetInspectionError::NotFound(run_id),
+                GetRunByIdError::Other(error) => GetInspectionError::Other(error),
+            })
     }
 
     async fn build_inspection(&self, run: RunEntity) -> Result<Inspection, GetInspectionError> {

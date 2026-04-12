@@ -3,7 +3,7 @@ use crate::{
     driver::DriverManager,
     error::{ReportError, RunWorkflowError},
     process::ProcessManager,
-    repository::EngineRepository,
+    repository::{EngineRepository, GetRunByIdError},
 };
 use anyhow::{Context, Result};
 use chrono::Utc;
@@ -102,6 +102,14 @@ impl RunService {
             .await
             .context("Failed to parse response")?;
         Ok(value)
+    }
+
+    pub async fn run_exists(&self, run_id: RunId) -> Result<bool> {
+        match self.repository.get_run_by_id(run_id).await {
+            Ok(_) => Ok(true),
+            Err(GetRunByIdError::NotFound(_)) => Ok(false),
+            Err(GetRunByIdError::Other(err)) => Err(err),
+        }
     }
 
     async fn fetch_and_store(

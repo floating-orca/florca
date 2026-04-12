@@ -8,9 +8,15 @@ use std::{env, fmt::Debug};
 use tracing::debug;
 
 #[derive(Debug, thiserror::Error)]
-pub enum GetRunError {
+pub enum GetLatestRunError {
     #[error("No latest run")]
     NoLatest,
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum GetRunByIdError {
     #[error("Run {0} not found")]
     NotFound(RunId),
     #[error(transparent)]
@@ -19,8 +25,8 @@ pub enum GetRunError {
 
 #[async_trait::async_trait]
 pub trait EngineRepository: Debug + Send + Sync {
-    async fn get_latest_run(&self) -> Result<RunEntity, GetRunError>;
-    async fn get_run_by_id(&self, run_id: RunId) -> Result<RunEntity, GetRunError>;
+    async fn get_latest_run(&self) -> Result<RunEntity, GetLatestRunError>;
+    async fn get_run_by_id(&self, run_id: RunId) -> Result<RunEntity, GetRunByIdError>;
     async fn get_runs_without_end_time(&self) -> Result<Vec<RunEntity>>;
     async fn new_run(&self, run_request: &RunRequest, start_time: DateTime<Utc>) -> Result<RunId>;
     async fn finalize_run(
@@ -60,17 +66,17 @@ impl SqlxEngineRepository {
 
 #[async_trait::async_trait]
 impl EngineRepository for SqlxEngineRepository {
-    async fn get_latest_run(&self) -> Result<RunEntity, GetRunError> {
+    async fn get_latest_run(&self) -> Result<RunEntity, GetLatestRunError> {
         sqlx::query_as::<_, RunEntity>(
             "select id, deployment_name, entry_point, input, output, start_time, end_time, success from runs order by id desc limit 1",
         )
         .fetch_optional(&self.pool)
         .await
         .context("error fetching latest run")?
-            .ok_or(GetRunError::NoLatest)
+            .ok_or(GetLatestRunError::NoLatest)
     }
 
-    async fn get_run_by_id(&self, run_id: RunId) -> Result<RunEntity, GetRunError> {
+    async fn get_run_by_id(&self, run_id: RunId) -> Result<RunEntity, GetRunByIdError> {
         sqlx::query_as::<_, RunEntity>(
             "select id, deployment_name, entry_point, input, output, start_time, end_time, success from runs where id = $1",
         )
@@ -78,8 +84,8 @@ impl EngineRepository for SqlxEngineRepository {
         .fetch_one(&self.pool)
         .await
             .map_err(|e| match e {
-                sqlx::Error::RowNotFound => GetRunError::NotFound(run_id),
-                _ => GetRunError::Other(e.into()),
+                sqlx::Error::RowNotFound => GetRunByIdError::NotFound(run_id),
+                _ => GetRunByIdError::Other(e.into()),
             })
     }
 
