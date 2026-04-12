@@ -10,6 +10,7 @@ import type {
 import { flushWriteQueue, run } from "./run.ts";
 import { resolve } from "@std/path";
 import { getPluginFilePath, namesOfShippedPlugins } from "./functions/mod.ts";
+import type { DriverState } from "./driver_state.ts";
 
 export function logEvent(level: LogLevel, message: string, data?: any) {
   const logEvent: LogEvent = {
@@ -85,6 +86,7 @@ export async function reportAvailabilityToEngine(runId: RunId, port: number) {
 
 export async function runWorkflow(
   driverArgs: DriverArgs,
+  driverState: DriverState,
 ): Promise<DriverResult> {
   let driverResult: DriverResult;
   try {
@@ -93,7 +95,7 @@ export async function runWorkflow(
       functionName: driverArgs.entryPoint,
       parent: null,
       predecessor: null,
-    });
+    }, driverState);
     driverResult = {
       runId: driverArgs.runId,
       result: {
@@ -117,7 +119,7 @@ export async function runWorkflow(
       throw e;
     }
   } finally {
-    await flushWriteQueue();
+    await flushWriteQueue(driverState);
   }
   return driverResult;
 }

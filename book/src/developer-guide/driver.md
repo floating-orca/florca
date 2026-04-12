@@ -25,7 +25,10 @@ If there is a `next`, the driver determines the next function to invoke, togethe
 Child invocations also enter via the `run` function, with no `predecessor` but with a `parent` set to the invocation ID of the parent function.
 
 ```typescript
-export const run = async (invokeArgs: InvokeArgs): Promise<Payload> => {
+export const run = async (
+  invokeArgs: InvokeArgs,
+  driverState: DriverState,
+): Promise<Payload> => {
   const { runId, deploymentPath, deploymentName } = invokeArgs;
   let { functionName, input, parent, predecessor, params } = invokeArgs;
   while (true) {
@@ -38,7 +41,7 @@ export const run = async (invokeArgs: InvokeArgs): Promise<Payload> => {
       parent,
       predecessor,
       params,
-    });
+    }, driverState);
     const next = response.next;
     if (!next) {
       return response.payload;
@@ -58,26 +61,33 @@ export const run = async (invokeArgs: InvokeArgs): Promise<Payload> => {
 
 const invoke = async (
   invokeArgs: InvokeArgs,
+  driverState: DriverState,
 ): Promise<[InvocationId, ResponseBody]> => {
-  const entry = findLookupEntry(invokeArgs.functionName);
-  const id = crypto.randomUUID();
+  const entry = findLookupEntry(invokeArgs.functionName, driverState);
+  const invocationId = crypto.randomUUID();
   let response: ResponseBody;
   if (entry.kind === "aws") {
-    response = await invokeAwsFunction(entry, invokeArgs, id);
+    response = await invokeAwsFunction(entry, invokeArgs, invocationId);
   } else if (entry.kind === "kn") {
-    response = await invokeKnFunction(entry, invokeArgs, id);
+    response = await invokeKnFunction(entry, invokeArgs, invocationId);
   } else if (entry.kind === "plugin") {
-    response = await invokePluginFunction(entry, invokeArgs, id);
+    response = await invokePluginFunction(
+      entry,
+      invokeArgs,
+      invocationId,
+      driverState,
+    );
   } else {
     throw new Error(`Unknown function type: ${entry}`);
   }
-  return [id, response];
+  return [invocationId, response];
 };
 
 export async function invokePluginFunction(
   entry: LookupEntry,
   invokeArgs: InvokeArgs,
-  id: InvocationId,
+  invocationId: InvocationId,
+  driverState: DriverState,
 ): Promise<ResponseBody> {
   const plugin = await import( // import <my-plugin>.ts
     resolve(invokeArgs.deploymentPath, entry.location)
@@ -85,7 +95,7 @@ export async function invokePluginFunction(
   const body: PluginRequestBody = {
     payload: invokeArgs.input,
     context: {
-      id,
+      id: invocationId,
       params: invokeArgs.params,
       parentId: invokeArgs.parent,
       run: (fn: string | any, payload: Payload) => {
@@ -106,10 +116,10 @@ export async function invokePluginFunction(
           functionName,
           input: payload,
           params: params ?? null,
-          parent: id,
+          parent: invocationId,
           predecessor: null,
         };
-        return run(runArgs);
+        return run(runArgs, driverState);
       },
       // ...
     },

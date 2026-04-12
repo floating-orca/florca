@@ -10,12 +10,14 @@ import type {
 } from "@florca/fn";
 import type { InvocationId, LookupEntry, PluginLogEvent } from "@florca/types";
 import { type InvokeArgs, run } from "./run.ts";
+import type { DriverState } from "./driver_state.ts";
 import { AUTHORIZATION_HEADER, getEngineUrl } from "./mod.ts";
 
 export async function invokePluginFunction(
   entry: LookupEntry,
   invokeArgs: InvokeArgs,
   invocationId: InvocationId,
+  driverState: DriverState,
 ): Promise<ResponseBody> {
   const plugin = await import(
     resolve(invokeArgs.deploymentPath, entry.location)
@@ -40,13 +42,13 @@ export async function invokePluginFunction(
       },
       onMessage: (fn: ((message: any) => void) | null) => {
         if (fn) {
-          globalThis.MessageHandlers.set(invocationId, fn);
+          driverState.messageHandlers.set(invocationId, fn);
         } else {
-          globalThis.MessageHandlers.delete(invocationId);
+          driverState.messageHandlers.delete(invocationId);
         }
       },
       onWorkflowMessage: (fn: ((message: any) => void) | null) => {
-        globalThis.WorkflowMessageHandler = fn;
+        driverState.workflowMessageHandler = fn;
       },
       run: (fn: string | any, payload: Payload) => {
         let functionName;
@@ -67,7 +69,7 @@ export async function invokePluginFunction(
           parent: invocationId,
           predecessor: null,
         };
-        return run(runArgs);
+        return run(runArgs, driverState);
       },
     },
   };

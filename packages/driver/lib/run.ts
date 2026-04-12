@@ -12,6 +12,7 @@ import type {
 } from "@florca/types";
 import { invokePluginFunction } from "./plugin.ts";
 import { logEvent } from "./mod.ts";
+import type { DriverState } from "./driver_state.ts";
 
 export class FunctionNotFoundError extends Error {
   constructor(functionName: FunctionName) {
@@ -46,7 +47,10 @@ type QueuedInvocation = {
 
 const writeQueue: QueuedInvocation[] = [];
 
-export const run = async (invokeArgs: InvokeArgs): Promise<Payload> => {
+export const run = async (
+  invokeArgs: InvokeArgs,
+  driverState: DriverState,
+): Promise<Payload> => {
   const { runId, deploymentPath, deploymentName } = invokeArgs;
   let { functionName, input, parent, predecessor, params } = invokeArgs;
   while (true) {
@@ -59,7 +63,7 @@ export const run = async (invokeArgs: InvokeArgs): Promise<Payload> => {
       parent,
       predecessor,
       params,
-    });
+    }, driverState);
     const next = response.next;
     if (!next) {
       return response.payload;
@@ -79,8 +83,9 @@ export const run = async (invokeArgs: InvokeArgs): Promise<Payload> => {
 
 const invoke = async (
   invokeArgs: InvokeArgs,
+  driverState: DriverState,
 ): Promise<[InvocationId, ResponseBody]> => {
-  const entry = findLookupEntry(invokeArgs.functionName);
+  const entry = findLookupEntry(invokeArgs.functionName, driverState);
   const invocationId = crypto.randomUUID();
   const startTime = new Date().toISOString();
 
@@ -97,7 +102,12 @@ const invoke = async (
   } else if (entry.kind === "kn") {
     response = await invokeKnFunction(entry, invokeArgs, invocationId);
   } else if (entry.kind === "plugin") {
-    response = await invokePluginFunction(entry, invokeArgs, invocationId);
+    response = await invokePluginFunction(
+      entry,
+      invokeArgs,
+      invocationId,
+      driverState,
+    );
   } else {
     throw new Error(`Unknown function type: ${entry}`);
   }
@@ -125,9 +135,11 @@ const invoke = async (
   return [invocationId, response];
 };
 
-export async function flushWriteQueue(): Promise<void> {
+export async function flushWriteQueue(
+  driverState: DriverState,
+): Promise<void> {
   if (writeQueue.length === 0) return;
-  using client = await globalThis.Pool.connect();
+  using client = await driverState.pool.connect();
   await client.queryArray("begin");
   try {
     const BATCH_SIZE = 1000;
@@ -168,8 +180,11 @@ export async function flushWriteQueue(): Promise<void> {
   }
 }
 
-function findLookupEntry(functionName: string): LookupEntry {
-  const entry = globalThis.LookupTable.find((f) => f.name === functionName);
+function findLookupEntry(
+  functionName: string,
+  driverState: DriverState,
+): LookupEntry {
+  const entry = driverState.lookupTable.find((f) => f.name === functionName);
   if (!entry) {
     throw new FunctionNotFoundError(functionName);
   }

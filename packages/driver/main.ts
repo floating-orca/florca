@@ -1,10 +1,5 @@
 import { type Context, Hono } from "@hono/hono";
-import type {
-  DriverArgs,
-  InvocationId,
-  InvokeChildArgs,
-  LookupEntry,
-} from "@florca/types";
+import type { DriverArgs, InvocationId, InvokeChildArgs } from "@florca/types";
 import {
   gatherLookupEntries,
   logEvent,
@@ -13,34 +8,30 @@ import {
 } from "./lib/mod.ts";
 import { type InvokeArgs, run } from "./lib/run.ts";
 import { Pool } from "@db/postgres";
-
-declare global {
-  var LookupTable: LookupEntry[];
-  // deno-lint-ignore no-explicit-any
-  var MessageHandlers: Map<InvocationId, (message: any) => any>;
-  // deno-lint-ignore no-explicit-any
-  var WorkflowMessageHandler: ((message: any) => any) | null | undefined;
-  var Pool: Pool;
-}
+import type { DriverState } from "./lib/driver_state.ts";
 
 if (Deno.args.length !== 1) {
   throw new Error("Expected exactly one argument");
 }
 const driverArgs: DriverArgs = JSON.parse(Deno.args[0]);
 
-globalThis.LookupTable = await gatherLookupEntries(driverArgs.deploymentPath);
-globalThis.MessageHandlers = new Map();
-
 const POOL_CONNECTIONS = 10;
 const databaseUrl = Deno.env.get("ENGINE_DATABASE_URL");
 if (!databaseUrl) {
   throw new Error("ENGINE_DATABASE_URL environment variable must be set");
 }
-globalThis.Pool = new Pool(
+const pool = new Pool(
   databaseUrl,
   POOL_CONNECTIONS,
   true,
 );
+
+const driverState: DriverState = {
+  lookupTable: await gatherLookupEntries(driverArgs.deploymentPath),
+  messageHandlers: new Map(),
+  workflowMessageHandler: null,
+  pool,
+};
 
 const app = new Hono();
 
@@ -53,13 +44,13 @@ app.post("/invoke", async (c: Context) => {
     predecessor: null,
     ...invokeChildArgs,
   };
-  const ret = await run(invokeArgs);
+  const ret = await run(invokeArgs, driverState);
   return c.json(ret);
 });
 
 app.post("/", async (c: Context) => {
   const message = await c.req.json();
-  const workflowMessageHandler = globalThis.WorkflowMessageHandler;
+  const workflowMessageHandler = driverState.workflowMessageHandler;
   let ret = {};
   if (workflowMessageHandler) {
     ret = await workflowMessageHandler(message);
@@ -74,7 +65,7 @@ app.post("/", async (c: Context) => {
 app.post("/:id", async (c: Context) => {
   const invocationId = c.req.param("id") as InvocationId;
   const message = await c.req.json();
-  const messageHandler = globalThis.MessageHandlers.get(invocationId);
+  const messageHandler = driverState.messageHandlers.get(invocationId);
   let ret = {};
   if (messageHandler) {
     ret = await messageHandler(message);
@@ -88,7 +79,7 @@ app.post("/:id", async (c: Context) => {
 });
 
 app.get("/", async (c: Context) => {
-  const workflowMessageHandler = globalThis.WorkflowMessageHandler;
+  const workflowMessageHandler = driverState.workflowMessageHandler;
   let ret = "No handler registered";
   if (workflowMessageHandler) {
     ret = await workflowMessageHandler({});
@@ -98,7 +89,7 @@ app.get("/", async (c: Context) => {
 
 app.get("/:id", async (c: Context) => {
   const invocationId = c.req.param("id") as InvocationId;
-  const messageHandler = globalThis.MessageHandlers.get(invocationId);
+  const messageHandler = driverState.messageHandlers.get(invocationId);
   let ret = "No handler registered";
   if (messageHandler) {
     ret = await messageHandler({});
@@ -118,8 +109,7 @@ const server = Deno.serve(
 
 await reportAvailabilityToEngine(driverArgs.runId, server.addr.port);
 
-const driverResult = await runWorkflow(driverArgs);
-
+const driverResult = await runWorkflow(driverArgs, driverState);
 await Deno.writeTextFile(
   driverArgs.outfilePath,
   JSON.stringify(driverResult),
