@@ -56,7 +56,7 @@ More specifically, we will use the `sslip.io` service to create a domain name th
 10. Get the release asset:
 
     ```bash
-    export VERSION=<florca-version> # e.g., 0.8.1
+    export VERSION=<florca-version> # e.g., 0.9.0
     export USERNAME=<your-github-username>
      export PERSONAL_ACCESS_TOKEN=<your-personal-access-token> # GitHub personal access token (classic) with `write:packages` and `delete:packages` scopes
 
