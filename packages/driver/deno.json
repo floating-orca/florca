@@ -1,6 +1,6 @@
 {
   "name": "@florca/driver",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "exports": {},
   "imports": {
     "@aws-sdk/client-lambda": "npm:@aws-sdk/client-lambda@^3.1019.0",

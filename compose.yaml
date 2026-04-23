@@ -17,7 +17,7 @@ services:
     restart: unless-stopped
 
   deployer:
-    image: ghcr.io/floating-orca/deployer:0.8.0
+    image: ghcr.io/floating-orca/deployer:0.8.1
     depends_on:
       postgres:
         condition: service_started
@@ -35,7 +35,7 @@ services:
       - ~/.aws:/root/.aws:ro
 
   engine:
-    image: ghcr.io/floating-orca/engine:0.8.0
+    image: ghcr.io/floating-orca/engine:0.8.1
     depends_on:
       postgres:
         condition: service_started
