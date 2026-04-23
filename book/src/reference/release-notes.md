@@ -2,6 +2,13 @@
 
 _See the [Upgrade](../user-guide/upgrade.md) chapter for instructions on how to upgrade to the latest version._
 
+## v0.8.1
+
+- Remove `--locked` from `cargo build` commands
+- Update Deno linter rules and imports
+- Add logging to the end-to-end test image
+- Additional example workflows
+
 ## v0.8.0
 
 - Add `--json` flags and a `message` command to the CLI
