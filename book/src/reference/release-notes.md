@@ -2,6 +2,22 @@
 
 _See the [Upgrade](../user-guide/upgrade.md) chapter for instructions on how to upgrade to the latest version._
 
+## v0.9.0
+
+- Use `UUID`s for invocation IDs instead of `SERIAL` IDs
+- Let the driver communicate events to the engine via a new `POST /{run}/events` endpoint
+- Move invocation persistence from the driver to the engine
+- Add a lightweight `GET /{run}/status` endpoint to the engine
+- Speed up inspection graph construction and rename the endpoint to `GET /{run}/inspection`
+- Report workflow run completion to the engine over HTTP instead of writing results to a file
+
+### Breaking changes
+
+The change from `SERIAL` to `UUID` invocation IDs is not backwards compatible.
+
+- In case one of your functions deals with invocation IDs, make sure to treat them as strings instead of integers.
+- There is no database migration for this change, so you will have to delete your existing `engine` database and let it be recreated with the new schema. Just follow the instructions in the [Upgrade](../user-guide/upgrade.md) chapter.
+
 ## v0.8.1
 
 - Remove `--locked` from `cargo build` commands
