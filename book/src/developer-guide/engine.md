@@ -8,6 +8,7 @@
 - `GET /{run}/inspection` - Inspect a workflow run, including function invocations' inputs and outputs
 - `GET /{run}/status` - Get only the workflow run's status (`running`, `success`, or `error`) without fetching the full inspection tree
 - `POST /{run}/invoke` - Invoke a child function (from within a remote function)
+- `POST /{run}/complete` - Receive workflow completion signal with result
 - `POST /{run}/{id}` - Send a message to a function invocation's message handler
 - `GET /{run}/{id}` - Retrieve HTML from a function invocation's message handler
 - `POST /{run}` - Send a message to the workflow's message handler

@@ -7,17 +7,10 @@ use tokio::process::Child;
 pub fn spawn_driver(
     run_request: RunRequest,
     deployment_path: &Path,
-    outfile_path: &Path,
     run_id: RunId,
     deno_lock_path: &Path,
 ) -> Result<Child> {
-    let args = build_args(
-        run_request,
-        deployment_path,
-        outfile_path,
-        run_id,
-        deno_lock_path,
-    )?;
+    let args = build_args(run_request, deployment_path, run_id, deno_lock_path)?;
     let child = tokio::process::Command::new("deno")
         .args(args)
         .stdout(Stdio::piped())
@@ -30,7 +23,6 @@ pub fn spawn_driver(
 fn build_args(
     run_request: RunRequest,
     deployment_path: &Path,
-    outfile_path: &Path,
     run_id: RunId,
     deno_lock_path: &Path,
 ) -> Result<Vec<String>> {
@@ -41,7 +33,6 @@ fn build_args(
         entry_point: run_request.entry_point,
         input: run_request.input,
         params: run_request.params,
-        outfile_path: outfile_path.to_path_buf(),
     };
     let args = vec![
         "run".to_string(),

@@ -4,4 +4,4 @@ import type { FunctionName } from "./FunctionName.ts";
 import type { RunId } from "./RunId.ts";
 import type { JsonValue } from "./serde_json/JsonValue.ts";
 
-export type DriverArgs = { runId: RunId, deploymentName: DeploymentName, deploymentPath: string, entryPoint: FunctionName, input: JsonValue, params: JsonValue, outfilePath: string, };
+export type DriverArgs = { runId: RunId, deploymentName: DeploymentName, deploymentPath: string, entryPoint: FunctionName, input: JsonValue, params: JsonValue, };

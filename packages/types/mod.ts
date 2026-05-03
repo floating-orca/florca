@@ -3,7 +3,6 @@ export * from "./bindings/DeploymentName.ts";
 export * from "./bindings/DriverArgs.ts";
 export * from "./bindings/DriverErrorDetails.ts";
 export * from "./bindings/DriverResult.ts";
-export * from "./bindings/DriverResultKind.ts";
 export * from "./bindings/DriverSuccessDetails.ts";
 export * from "./bindings/FunctionName.ts";
 export * from "./bindings/InvocationId.ts";

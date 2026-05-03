@@ -2,10 +2,7 @@
 
 Almost all communication between the components happens via HTTP requests, using JSON as the data format.
 
-The only exception is the communication between the engine and its driver instances:
-
-- The driver writes the result of a workflow run to a temporary file, which is then read by the engine.
-- The engine parses stdout and stderr of driver instances for logging purposes.
+The only exception is the communication between the driver instances and the engine, where the engine parses stdout and stderr of driver instances for displaying log messages with metadata.
 
 Most of the communication is typed. For communication between two Rust services, the types are defined in the `core` crate. For communication between Rust and TypeScript, the [`ts-rs`](https://docs.rs/ts-rs/latest/ts_rs/) crate is used to generate TypeScript bindings from Rust types.
 

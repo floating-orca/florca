@@ -131,7 +131,7 @@ impl EngineRepository for SqlxEngineRepository {
 
         if result.rows_affected() == 0 {
             debug!(
-                run = run_id.to_string(),
+                run = %run_id,
                 "Run already finalized; skipping update"
             );
         }

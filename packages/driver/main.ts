@@ -115,7 +115,7 @@ const server = Deno.serve(
 await reportAvailabilityToEngine(driverArgs.runId, server.addr.port);
 
 const driverResult = await runWorkflow(driverArgs, driverState);
-await completeRun(driverArgs, driverResult);
+await completeRun(driverArgs.runId, driverResult);
 
 server.shutdown();
 

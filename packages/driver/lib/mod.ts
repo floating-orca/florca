@@ -68,22 +68,16 @@ export async function runWorkflow(
       predecessor: null,
     }, driverState);
     driverResult = {
-      runId: driverArgs.runId,
-      result: {
-        success: {
-          value: result,
-        },
+      success: {
+        value: result,
       },
     };
   } catch (e) {
     if (e instanceof Error) {
       driverResult = {
-        runId: driverArgs.runId,
-        result: {
-          error: {
-            kind: e.constructor.name,
-            message: e.message,
-          },
+        error: {
+          kind: e.constructor.name,
+          message: e.message,
         },
       };
     } else {
@@ -96,11 +90,22 @@ export async function runWorkflow(
 }
 
 export async function completeRun(
-  driverArgs: DriverArgs,
-  driverResult: DriverResultKind,
+  runId: RunId,
+  driverResult: DriverResult,
 ): Promise<void> {
-  await Deno.writeTextFile(
-    driverArgs.outfilePath,
-    JSON.stringify(driverResult),
-  );
+  const url = `${env.getEngineUrl()}/${runId}/complete`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: getAuthorizationHeader(),
+    },
+    body: JSON.stringify(driverResult),
+  });
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "");
+    throw new Error(
+      `Failed to complete run: ${response.status} ${response.statusText}\n${errorText}`,
+    );
+  }
 }

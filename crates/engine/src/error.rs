@@ -41,6 +41,14 @@ pub enum MessageError {
 }
 
 #[derive(thiserror::Error, Debug)]
+pub enum WorkflowCompletionError {
+    #[error("Run {0} not found")]
+    NotFound(RunId),
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
+}
+
+#[derive(thiserror::Error, Debug)]
 pub enum ReportError {
     #[error("Run {0} not found")]
     NotFound(RunId),

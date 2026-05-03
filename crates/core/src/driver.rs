@@ -17,7 +17,6 @@ pub struct DriverArgs {
     pub entry_point: FunctionName,
     pub input: Value,
     pub params: Value,
-    pub outfile_path: PathBuf,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -43,16 +42,7 @@ pub struct InvokeChildArgs {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[derive(TS)]
-#[ts(export)]
-pub struct DriverResult {
-    pub run_id: RunId,
-    pub result: DriverResultKind,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-#[derive(TS)]
-pub enum DriverResultKind {
+pub enum DriverResult {
     Error(DriverErrorDetails),
     Success(DriverSuccessDetails),
 }

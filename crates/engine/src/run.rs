@@ -8,6 +8,7 @@ use crate::{
 use anyhow::{Context, Result};
 use chrono::Utc;
 use florca_core::{
+    driver::DriverResult,
     http::RequestBuilderExt,
     lookup::LookupEntry,
     run::{RunId, RunRequest},
@@ -16,7 +17,7 @@ use reqwest::Client;
 use serde_json::Value;
 use std::sync::Arc;
 use tempfile::{NamedTempFile, TempDir};
-use tracing::error;
+use tracing::{debug, error};
 
 #[derive(Debug, Clone)]
 pub struct RunService {
@@ -60,7 +61,7 @@ impl RunService {
                 .run_workflow(run_request, temporary_directory_path)
                 .await
             {
-                error!(run = run_id.to_string(), ?err, "Driver task failed");
+                error!(run = %run_id, ?err, "Driver task failed");
             }
         });
         Ok(run_id)
@@ -110,6 +111,32 @@ impl RunService {
             Err(GetRunByIdError::NotFound(_)) => Ok(false),
             Err(GetRunByIdError::Other(err)) => Err(err),
         }
+    }
+
+    pub async fn finalize_run(&self, run_id: RunId, driver_result: DriverResult) -> Result<()> {
+        match driver_result {
+            DriverResult::Success(success_details) => {
+                debug!(run = %run_id, "Processing successful workflow result");
+                self.repository
+                    .finalize_run(true, run_id, &success_details.value, Utc::now())
+                    .await
+                    .with_context(|| format!("Failed to finalize successful run {run_id}"))?;
+            }
+            DriverResult::Error(error_details) => {
+                error!(run = %run_id, "Processing failed workflow result");
+                let error_value = serde_json::to_value(&error_details).unwrap_or_else(|_| {
+                    serde_json::json!({
+                        "kind": error_details.kind,
+                        "message": error_details.message
+                    })
+                });
+                self.repository
+                    .finalize_run(false, run_id, &error_value, Utc::now())
+                    .await
+                    .with_context(|| format!("Failed to finalize failed run {run_id}"))?;
+            }
+        }
+        Ok(())
     }
 
     async fn fetch_and_store(

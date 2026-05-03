@@ -4,6 +4,7 @@ use axum::Router;
 use axum::routing::{delete, get, post};
 use std::sync::Arc;
 
+mod completion_endpoint;
 mod inspection_endpoint;
 mod kill_endpoint;
 mod message_endpoints;
@@ -22,6 +23,10 @@ pub async fn serve(shared_state: Arc<AppState>) -> Result<()> {
         )
         .route("/{run}/status", get(inspection_endpoint::get_status))
         .route("/{run}/invoke", post(run_endpoints::invoke_child))
+        .route(
+            "/{run}/complete",
+            post(completion_endpoint::handle_complete_run),
+        )
         .route("/{run}/{id}", post(message_endpoints::to_function))
         .route("/{run}/{id}", get(message_endpoints::html_from_function))
         .route("/{run}", post(message_endpoints::to_workflow))

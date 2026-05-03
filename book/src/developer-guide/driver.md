@@ -134,10 +134,8 @@ export async function invokePluginFunction(
 
 _Note that only the root function of a child workflow has a `parent` set. Subsequent functions have a `predecessor` set instead._
 
-## IPC
+## Logging
 
-Besides the HTTP API endpoints listed above, the driver also communicates with the engine via standard input & output and files.
+The driver writes structured log messages to stdout and stderr, which the engine continuously reads.
 
-In case of standard input & output, the engine continously reads from the driver's output, parses messages (potentially containing JSON), and logs them with log levels and additional metadata such as the ID of the run the driver is associated with.
-
-Finally, before the driver exits, it will write the result of the workflow run to a file. The engine then reads this file to determine the final output and to update the status of the workflow run in the database.
+The engine parses these messages and logs them with log levels and additional metadata such as the ID of the run the driver is associated with.
