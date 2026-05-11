@@ -90,10 +90,7 @@ Also note how we use `requestBody.context`'s `logEvent` method to log a message 
 The message will show up as follows in the engine's output:
 
 ```plaintext
-2025-05-30T09:04:10.718139Z  INFO driver: Making decision based on input {
-  "input": 3,
-  "isEven": false
-} run="9" invocation=26 function="isEven"
+2026-05-11T10:55:43.317124Z  INFO driver: Making decision based on input {"input":3,"isEven":false} run=1 invocation="78a13e54-a3ff-4334-9c9b-3e2b629edfd3" function="isEven"
 ```
 
 ### `simple-example/even.ts`
