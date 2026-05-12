@@ -10,6 +10,7 @@ use florca_core::run::RunRequest;
 use florca_core::run::{LatestOrRunId, RunId};
 use reqwest::blocking::{Client, Response};
 use serde_json::Value;
+use std::io::{self, IsTerminal, Read};
 use std::{thread, time::Duration};
 
 #[allow(clippy::struct_excessive_bools)]
@@ -19,7 +20,7 @@ pub struct RunCommand {
     #[arg(short, long)]
     pub deployment_name: DeploymentName,
 
-    /// The input to the workflow (JSON)
+    /// The input to the workflow (JSON). If omitted and stdin is piped, JSON is read from stdin.
     #[arg(short, long, value_parser = util::parse_json)]
     pub input: Option<Value>,
 
@@ -60,7 +61,8 @@ impl RunCommand {
     /// * The run request to the server fails, the server returns an error, or the response cannot be parsed
     /// * The inspection data cannot be retrieved or parsed while waiting for the run to finish
     pub fn execute(self) -> Result<()> {
-        let response = request_run(&self)?;
+        let input = resolve_input(&self)?;
+        let response = request_run(&self, input)?;
         if let Err(e) = response.error_for_status_ref() {
             let text = response.text()?;
             if text.is_empty() {
@@ -112,11 +114,11 @@ impl RunCommand {
     }
 }
 
-fn request_run(run_args: &RunCommand) -> Result<Response> {
+fn request_run(run_args: &RunCommand, input: Option<Value>) -> Result<Response> {
     let run_request = RunRequest {
         deployment_name: run_args.deployment_name.clone(),
         entry_point: run_args.entry_point.clone(),
-        input: run_args.input.clone().unwrap_or(Value::Null),
+        input: input.unwrap_or(Value::Null),
         params: run_args.params.clone().unwrap_or(Value::Null),
     };
     let url = EngineUrl::base();
@@ -126,4 +128,23 @@ fn request_run(run_args: &RunCommand) -> Result<Response> {
         .json(&run_request)
         .send()?;
     Ok(response)
+}
+
+fn resolve_input(run_args: &RunCommand) -> Result<Option<Value>> {
+    if io::stdin().is_terminal() {
+        return Ok(run_args.input.clone());
+    }
+
+    if run_args.input.is_some() {
+        anyhow::bail!("Conflicting input sources: stdin and --input. Use only one.");
+    }
+
+    let mut buffer = String::new();
+    io::stdin().read_to_string(&mut buffer)?;
+    let trimmed = buffer.trim();
+    if trimmed.is_empty() {
+        anyhow::bail!("Stdin is empty. Provide JSON via stdin or use --input.");
+    }
+
+    Ok(Some(util::parse_json(trimmed)?))
 }
