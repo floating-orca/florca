@@ -4,6 +4,7 @@ use axum::Router;
 use axum::extract::DefaultBodyLimit;
 use axum::routing::{delete, get, post};
 use std::sync::Arc;
+use tracing::info;
 
 mod completion_endpoint;
 mod event_endpoints;
@@ -39,6 +40,7 @@ pub async fn serve(shared_state: Arc<AppState>) -> Result<()> {
         .layer(DefaultBodyLimit::disable());
     let port = std::env::var("PORT").unwrap_or_else(|_| "8001".to_string());
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await?;
+    info!("engine listening on port {port}");
     let kill_service = shared_state.kill_service.clone();
     axum::serve(listener, app)
         .with_graceful_shutdown(crate::shutdown_signal(kill_service))

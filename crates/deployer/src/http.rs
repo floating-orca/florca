@@ -18,7 +18,7 @@ use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::sync::RwLock;
 use tokio_util::io::ReaderStream;
-use tracing::{error, warn};
+use tracing::{error, info, warn};
 
 pub async fn serve(shared_state: Arc<RwLock<AppState>>) -> Result<()> {
     let app = Router::new()
@@ -28,6 +28,7 @@ pub async fn serve(shared_state: Arc<RwLock<AppState>>) -> Result<()> {
         .layer(DefaultBodyLimit::disable());
     let port = std::env::var("PORT").unwrap_or_else(|_| "8000".to_string());
     let listener = TcpListener::bind(format!("0.0.0.0:{port}")).await?;
+    info!("deployer listening on port {port}");
     axum::serve(listener, app).await?;
     Ok(())
 }
