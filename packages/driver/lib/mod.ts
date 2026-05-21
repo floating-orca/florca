@@ -63,8 +63,9 @@ export async function runWorkflow(
   let driverResult: DriverResult;
   try {
     const result = await run({
-      ...driverArgs,
       functionName: driverArgs.entryPoint,
+      input: driverArgs.input,
+      params: driverArgs.params,
       parent: null,
       predecessor: null,
     }, driverState);

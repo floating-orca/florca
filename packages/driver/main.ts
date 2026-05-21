@@ -23,6 +23,9 @@ const invocationLoggerFactory = new EventSinkInvocationLoggerFactory(eventSink);
 const workflowLogger = new EventSinkWorkflowLogger(eventSink);
 
 const driverState: DriverState = {
+  runId: driverArgs.runId,
+  deploymentName: driverArgs.deploymentName,
+  deploymentPath: driverArgs.deploymentPath,
   lookupTable: await gatherLookupEntries(driverArgs.deploymentPath),
   messageHandlers: new Map(),
   workflowMessageHandler: null,
@@ -36,11 +39,8 @@ const app = new Hono();
 app.post("/invoke", async (c: Context) => {
   const invokeChildArgs: InvokeChildArgs = await c.req.json();
   const invokeArgs: InvokeArgs = {
-    runId: driverArgs.runId,
-    deploymentName: driverArgs.deploymentName,
-    deploymentPath: driverArgs.deploymentPath,
-    predecessor: null,
     ...invokeChildArgs,
+    predecessor: null,
   };
   const ret = await run(invokeArgs, driverState);
   return c.json(ret);

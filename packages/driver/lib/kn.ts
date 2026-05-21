@@ -1,6 +1,7 @@
 import type { RemoteRequestBody, ResponseBody } from "@florca/fn";
 import type { InvocationId, LookupEntry } from "@florca/types";
 import type { InvokeArgs } from "./invoke_args.ts";
+import type { DriverState } from "./driver_state.ts";
 import { getAuthorizationHeader } from "./auth.ts";
 import * as env from "./env.ts";
 
@@ -8,6 +9,7 @@ export const invokeKnFunction = async (
   entry: LookupEntry,
   invokeArgs: InvokeArgs,
   invocationId: InvocationId,
+  driverState: DriverState,
 ): Promise<ResponseBody> => {
   const baseUrl = entry.location;
   const funcPort = env.getKnFuncPort();
@@ -23,7 +25,7 @@ export const invokeKnFunction = async (
       params: invokeArgs.params,
       parentId: invokeArgs.parent,
       workflowMessageUrl:
-        `${env.getEngineUrlForAccessFromKn()}/${invokeArgs.runId}`,
+        `${env.getEngineUrlForAccessFromKn()}/${driverState.runId}`,
     },
   };
 

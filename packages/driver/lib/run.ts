@@ -19,118 +19,111 @@ export class FunctionNotFoundError extends Error {
   }
 }
 
+// "Run" while there is a next function to invoke
 export const run = async (
-  invokeArgs: InvokeArgs,
+  args: InvokeArgs,
   driverState: DriverState,
 ): Promise<Payload> => {
-  const { runId, deploymentPath, deploymentName } = invokeArgs;
-  let { functionName, input, parent, predecessor, params } = invokeArgs;
   while (true) {
-    const [id, response] = await invoke({
-      runId,
-      deploymentName,
-      deploymentPath,
-      functionName,
-      input,
-      parent,
-      predecessor,
-      params,
-    }, driverState);
+    // Invoke the function
+    const [id, response] = await invoke(args, driverState);
+
     const next = response.next;
+
+    // If there is no next function, return the response
     if (!next) {
       return response.payload;
-    } else if (typeof next === "string") {
-      functionName = next;
-      input = response.payload;
-      params = null;
-    } else {
-      functionName = Object.keys(next)[0];
-      input = response.payload;
-      params = next[functionName] ?? null;
     }
-    parent = null;
-    predecessor = id;
+
+    // Otherwise, prepare to invoke the next function
+    // deno-fmt-ignore
+    const { functionName, params } = typeof next === "string"
+      ? { functionName: next, params: null }
+      : { functionName: Object.keys(next)[0], params: next[Object.keys(next)[0]] ?? null };
+    args = {
+      functionName,
+      input: response.payload,
+      params,
+      parent: null,
+      predecessor: id,
+    };
   }
 };
 
+// "Invoke" a single function and return its response
 const invoke = async (
-  invokeArgs: InvokeArgs,
+  args: InvokeArgs,
   driverState: DriverState,
 ): Promise<[InvocationId, ResponseBody]> => {
-  const entry = findLookupEntry(
-    invokeArgs.functionName,
-    driverState.lookupTable,
-  );
-  const invocationId = crypto.randomUUID();
-  const invocationLogger = driverState.invocationLoggerFactory.forInvocation(
-    invocationId,
-    invokeArgs.functionName,
-  );
-  const startTime = Temporal.Now.instant().toString();
-
-  invocationLogger.logEvent("DEBUG", "Invocation start", {
-    input: invokeArgs.input,
-    params: invokeArgs.params,
-  });
-
+  const invocationId: InvocationId = crypto.randomUUID();
+  const startTime = Temporal.Now.instant();
+  logInvocationStart(args, invocationId, driverState);
   try {
-    let response: ResponseBody;
-    if (entry.kind === "aws") {
-      response = await invokeAwsFunction(
-        entry,
-        invokeArgs,
-        invocationId,
-        invocationLogger,
-      );
-    } else if (entry.kind === "kn") {
-      response = await invokeKnFunction(entry, invokeArgs, invocationId);
-    } else if (entry.kind === "plugin") {
-      response = await invokePluginFunction(
-        entry,
-        invokeArgs,
-        invocationId,
-        driverState,
-      );
-    } else {
-      throw new Error(`Unknown function type: ${entry}`);
-    }
-
-    const endTime = Temporal.Now.instant().toString();
-    const event: DriverEvent = newSuccessEvent(
-      invocationId,
-      invokeArgs,
-      response,
-      startTime,
-      endTime,
+    const invokeFn = getInvokeFn(args.functionName, driverState.lookupTable);
+    const response = await invokeFn(args, invocationId, driverState);
+    const endTime = Temporal.Now.instant();
+    driverState.eventSink.addEvent(
+      newSuccessEvent(args, invocationId, startTime, response, endTime),
     );
-    driverState.eventSink.addEvent(event);
-
     return [invocationId, response];
   } catch (e) {
     if (e instanceof Error) {
-      const error = {
-        kind: e.constructor.name,
-        message: e.message,
-      };
-      const failureEvent: DriverEvent = newFailureEvent(
-        invocationId,
-        invokeArgs,
-        startTime,
-        error,
+      const error = { kind: e.constructor.name, message: e.message };
+      driverState.eventSink.addEvent(
+        newFailureEvent(args, invocationId, startTime, error),
       );
-      driverState.eventSink.addEvent(failureEvent);
     }
-
     throw e;
   }
 };
 
-function newSuccessEvent(
-  invocationId: InvocationId,
+type InvokeFn = (
   invokeArgs: InvokeArgs,
+  invocationId: InvocationId,
+  driverState: DriverState,
+) => Promise<ResponseBody>;
+
+function getInvokeFn(
+  functionName: FunctionName,
+  lookupTable: LookupEntry[],
+): InvokeFn {
+  const entry = findLookupEntry(functionName, lookupTable);
+  switch (entry.kind) {
+    case "aws":
+      return (invokeArgs, invocationId, driverState) =>
+        invokeAwsFunction(entry, invokeArgs, invocationId, driverState);
+    case "kn":
+      return (invokeArgs, invocationId, driverState) =>
+        invokeKnFunction(entry, invokeArgs, invocationId, driverState);
+    case "plugin":
+      return (invokeArgs, invocationId, driverState) =>
+        invokePluginFunction(entry, invokeArgs, invocationId, driverState);
+    default:
+      throw new Error(`Unknown function type: ${entry}`);
+  }
+}
+
+function logInvocationStart(
+  invokeArgs: InvokeArgs,
+  invocationId: InvocationId,
+  driverState: DriverState,
+) {
+  const invocationLogger = driverState.invocationLoggerFactory.forInvocation(
+    invocationId,
+    invokeArgs.functionName,
+  );
+  invocationLogger.logEvent("DEBUG", "Invocation start", {
+    input: invokeArgs.input,
+    params: invokeArgs.params,
+  });
+}
+
+function newSuccessEvent(
+  invokeArgs: InvokeArgs,
+  invocationId: InvocationId,
+  startTime: Temporal.Instant,
   response: ResponseBody,
-  startTime: string,
-  endTime: string,
+  endTime: Temporal.Instant,
 ): DriverEvent {
   return {
     type: "invocationSuccess",
@@ -141,15 +134,15 @@ function newSuccessEvent(
     input: invokeArgs.input ?? null,
     params: invokeArgs.params ?? null,
     output: response ?? null,
-    startTime,
-    endTime,
+    startTime: startTime.toString(),
+    endTime: endTime.toString(),
   };
 }
 
 function newFailureEvent(
-  invocationId: InvocationId,
   invokeArgs: InvokeArgs,
-  startTime: string,
+  invocationId: InvocationId,
+  startTime: Temporal.Instant,
   error: { kind: string; message: string },
 ): DriverEvent {
   return {
@@ -160,7 +153,7 @@ function newFailureEvent(
     functionName: invokeArgs.functionName,
     input: invokeArgs.input ?? null,
     params: invokeArgs.params ?? null,
-    startTime,
+    startTime: startTime.toString(),
     error,
   };
 }

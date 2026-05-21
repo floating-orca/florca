@@ -25,75 +25,57 @@ If there is a `next`, the driver determines the next function to invoke, togethe
 Child invocations also enter via the `run` function, with no `predecessor` but with a `parent` set to the invocation ID of the parent function.
 
 ```typescript
+// "Run" while there is a next function to invoke
 export const run = async (
-  invokeArgs: InvokeArgs,
+  args: InvokeArgs,
   driverState: DriverState,
 ): Promise<Payload> => {
-  const { runId, deploymentPath, deploymentName } = invokeArgs;
-  let { functionName, input, parent, predecessor, params } = invokeArgs;
   while (true) {
-    const [id, response] = await invoke({
-      runId,
-      deploymentName,
-      deploymentPath,
-      functionName,
-      input,
-      parent,
-      predecessor,
-      params,
-    }, driverState);
+    // Invoke the function
+    const [id, response] = await invoke(args, driverState);
+
     const next = response.next;
+
+    // If there is no next function, return the response
     if (!next) {
       return response.payload;
-    } else if (typeof next === "string") {
-      functionName = next;
-      input = response.payload;
-      params = null;
-    } else {
-      functionName = Object.keys(next)[0];
-      input = response.payload;
-      params = next[functionName] ?? null;
     }
-    parent = null;
-    predecessor = id;
+
+    // Otherwise, prepare to invoke the next function
+    const { functionName, params } = typeof next === "string"
+      ? { functionName: next, params: null }
+      : { functionName: Object.keys(next)[0], params: next[Object.keys(next)[0]] ?? null };
+    args = {
+      functionName,
+      input: response.payload,
+      params,
+      parent: null,
+      predecessor: id,
+    };
   }
 };
 
+// "Invoke" a single function and return its response
 const invoke = async (
-  invokeArgs: InvokeArgs,
+  args: InvokeArgs,
   driverState: DriverState,
 ): Promise<[InvocationId, ResponseBody]> => {
-  const entry = findLookupEntry(
-    invokeArgs.functionName,
-    driverState.lookupTable,
-  );
-  const invocationId = crypto.randomUUID();
-  let response: ResponseBody;
-  if (entry.kind === "aws") {
-    response = await invokeAwsFunction(entry, invokeArgs, invocationId);
-  } else if (entry.kind === "kn") {
-    response = await invokeKnFunction(entry, invokeArgs, invocationId);
-  } else if (entry.kind === "plugin") {
-    response = await invokePluginFunction(
-      entry,
-      invokeArgs,
-      invocationId,
-      driverState,
-    );
-  } else {
-    throw new Error(`Unknown function type: ${entry}`);
-  }
+  const invocationId: InvocationId = crypto.randomUUID();
+  const invokeFn = getInvokeFn(args.functionName, driverState.lookupTable);
+  const response = await invokeFn(args, invocationId, driverState);
   return [invocationId, response];
 };
 
-export async function invokePluginFunction(
+// The following function is called by `invokeFn`
+// when the function to be invoked is a plugin function
+async function invokePluginFunction(
   entry: LookupEntry,
   invokeArgs: InvokeArgs,
   invocationId: InvocationId,
   driverState: DriverState,
 ): Promise<ResponseBody> {
   const plugin = await import( // import <my-plugin>.ts
-    resolve(invokeArgs.deploymentPath, entry.location)
+    resolve(driverState.deploymentPath, entry.location)
   );
   const body: PluginRequestBody = {
     payload: invokeArgs.input,
@@ -112,17 +94,14 @@ export async function invokePluginFunction(
           functionName = Object.keys(fn)[0];
           params = fn[functionName];
         }
-        const runArgs: InvokeArgs = {
-          runId: invokeArgs.runId,
-          deploymentName: invokeArgs.deploymentName,
-          deploymentPath: invokeArgs.deploymentPath,
+        const invokeArgs: InvokeArgs = {
           functionName,
           input: payload,
           params: params ?? null,
           parent: invocationId,
           predecessor: null,
         };
-        return run(runArgs, driverState);
+        return run(invokeArgs, driverState);
       },
       // ...
     },

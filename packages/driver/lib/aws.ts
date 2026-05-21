@@ -9,15 +9,15 @@ import {
 import { Buffer } from "node:buffer";
 import type { InvocationId, LookupEntry } from "@florca/types";
 import type { InvokeArgs } from "./invoke_args.ts";
+import type { DriverState } from "./driver_state.ts";
 import { getAuthorizationHeader } from "./auth.ts";
 import * as env from "./env.ts";
-import type { InvocationLogger } from "./invocation_logger.ts";
 
 export const invokeAwsFunction = async (
   entry: LookupEntry,
   invokeArgs: InvokeArgs,
   invocationId: InvocationId,
-  invocationLogger: InvocationLogger,
+  driverState: DriverState,
 ): Promise<ResponseBody> => {
   const arn = entry.location;
   const body: RemoteRequestBody = {
@@ -27,7 +27,7 @@ export const invokeAwsFunction = async (
       id: invocationId,
       params: invokeArgs.params,
       parentId: invokeArgs.parent,
-      workflowMessageUrl: `${env.getEngineUrl()}/${invokeArgs.runId}`,
+      workflowMessageUrl: `${env.getEngineUrl()}/${driverState.runId}`,
     },
   };
 
@@ -59,6 +59,10 @@ export const invokeAwsFunction = async (
     logs = Buffer.from(LogResult, "base64").toString();
   }
 
+  const invocationLogger = driverState.invocationLoggerFactory.forInvocation(
+    invocationId,
+    invokeArgs.functionName,
+  );
   if (FunctionError) {
     const message =
       `AWS Lambda function ${arn} failed with error: ${FunctionError}`;

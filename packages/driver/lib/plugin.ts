@@ -24,7 +24,7 @@ export async function invokePluginFunction(
     invokeArgs.functionName,
   );
   const plugin = await import(
-    resolve(invokeArgs.deploymentPath, entry.location)
+    resolve(driverState.deploymentPath, entry.location)
   );
   const body: PluginRequestBody = {
     payload: invokeArgs.input,
@@ -33,7 +33,7 @@ export async function invokePluginFunction(
       id: invocationId,
       params: invokeArgs.params,
       parentId: invokeArgs.parent,
-      workflowMessageUrl: `${env.getEngineUrl()}/${invokeArgs.runId}`,
+      workflowMessageUrl: `${env.getEngineUrl()}/${driverState.runId}`,
       logEvent: (level: LogLevel, message: string, data?: any) => {
         invocationLogger.logEvent(level, message, data);
       },
@@ -56,17 +56,14 @@ export async function invokePluginFunction(
           functionName = Object.keys(fn)[0];
           params = fn[functionName];
         }
-        const runArgs: InvokeArgs = {
-          runId: invokeArgs.runId,
-          deploymentName: invokeArgs.deploymentName,
-          deploymentPath: invokeArgs.deploymentPath,
+        const invokeArgs: InvokeArgs = {
           functionName,
           input: payload,
           params: params ?? null,
           parent: invocationId,
           predecessor: null,
         };
-        return run(runArgs, driverState);
+        return run(invokeArgs, driverState);
       },
     },
   };
