@@ -3,7 +3,6 @@ import type { DriverEvent } from "@florca/types";
 import type { EventSink } from "./event_sink.ts";
 
 export interface InvocationLogger {
-  // deno-lint-ignore no-explicit-any
   logEvent(level: LogLevel, message: string, data?: any): void;
 }
 
@@ -21,7 +20,6 @@ class EventSinkInvocationLogger implements InvocationLogger {
     private readonly functionName: FunctionName,
   ) {}
 
-  // deno-lint-ignore no-explicit-any
   logEvent(level: LogLevel, message: string, data?: any): void {
     const invocationLogMessage: DriverEvent = {
       type: "log",

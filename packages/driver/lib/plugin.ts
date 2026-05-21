@@ -1,5 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
-
 import "@std/dotenv/load";
 import { resolve } from "@std/path";
 import type {
