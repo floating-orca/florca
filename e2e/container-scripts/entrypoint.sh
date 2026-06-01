@@ -2,6 +2,9 @@
 
 set -Eeuo pipefail
 
+# Fix DNS resolution for *.localhost domains inside the container
+echo "127.0.0.1 deployer.florca.localhost engine.florca.localhost" >> /etc/hosts
+
 mkdir -p /var/log/florca
 
 caddy run --config Caddyfile > /var/log/florca/caddy.log 2>&1 &
