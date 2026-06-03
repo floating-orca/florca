@@ -32,6 +32,7 @@ const driverState: DriverState = {
   eventSink,
   invocationLoggerFactory,
   workflowLogger,
+  lambdaClients: new Map(),
 };
 
 const app = new Hono();

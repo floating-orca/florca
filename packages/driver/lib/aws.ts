@@ -13,6 +13,15 @@ import type { DriverState } from "./driver_state.ts";
 import { getAuthorizationHeader } from "./auth.ts";
 import * as env from "./env.ts";
 
+function getLambdaClient(region: string, driverState: DriverState) {
+  let client = driverState.lambdaClients.get(region);
+  if (!client) {
+    client = new LambdaClient({ region });
+    driverState.lambdaClients.set(region, client);
+  }
+  return client;
+}
+
 export const invokeAwsFunction = async (
   entry: LookupEntry,
   invokeArgs: InvokeArgs,
@@ -32,7 +41,7 @@ export const invokeAwsFunction = async (
   };
 
   const region = arn.split(":")[3];
-  const client = new LambdaClient({ region });
+  const client = getLambdaClient(region, driverState);
 
   const input: InvokeCommandInput = {
     FunctionName: arn,

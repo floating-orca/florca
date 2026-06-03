@@ -7,6 +7,7 @@ import type {
 import type { EventSink } from "./event_sink.ts";
 import type { InvocationLoggerFactory } from "./invocation_logger.ts";
 import type { WorkflowLogger } from "./workflow_logger.ts";
+import type { LambdaClient } from "@aws-sdk/client-lambda";
 
 export type MessageHandler = (message: any) => any;
 
@@ -20,4 +21,5 @@ export type DriverState = {
   eventSink: EventSink;
   invocationLoggerFactory: InvocationLoggerFactory;
   workflowLogger: WorkflowLogger;
+  lambdaClients: Map<string, LambdaClient>;
 };
