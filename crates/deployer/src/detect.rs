@@ -1,9 +1,10 @@
 use crate::errors::DeployError;
 use anyhow::Result;
-use chksum::{SHA2_256, chksum};
+use chksum::SHA2_256;
 use florca_core::function::{FunctionConfig, FunctionName};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
+use walkdir::WalkDir;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -76,9 +77,28 @@ pub async fn detect_functions(path: &Path) -> Result<Vec<FunctionToDeploy>, Depl
     Ok(functions)
 }
 
-fn hash_content(path: &PathBuf) -> Result<String> {
-    let digest = chksum::<SHA2_256>(path)?;
-    Ok(digest.to_hex_lowercase())
+// The relative path makes renames change the hash. The length keeps file
+// boundaries unambiguous.
+fn hash_content(path: &Path) -> Result<String> {
+    let mut files = Vec::new();
+    for entry in WalkDir::new(path) {
+        let entry = entry?;
+        if entry.file_type().is_file() {
+            files.push(entry.into_path());
+        }
+    }
+    files.sort();
+
+    let mut hash = SHA2_256::new();
+    for file in &files {
+        let relative = file.strip_prefix(path)?;
+        hash.update(relative.as_os_str().as_encoded_bytes());
+        hash.update([0]);
+        let content = std::fs::read(file)?;
+        hash.update((content.len() as u64).to_le_bytes());
+        hash.update(&content);
+    }
+    Ok(hash.digest().to_hex_lowercase())
 }
 
 #[cfg(test)]
@@ -86,6 +106,20 @@ fn hash_content(path: &PathBuf) -> Result<String> {
 mod tests {
     use super::*;
     use florca_core::function::{AwsFunctionConfig, FunctionName};
+
+    #[test]
+    fn test_hash_detects_renames() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let path = temp_dir.path();
+        std::fs::write(path.join("a.py"), "content").unwrap();
+
+        let before = hash_content(path).unwrap();
+        std::fs::rename(path.join("a.py"), path.join("b.py")).unwrap();
+        let after = hash_content(path).unwrap();
+
+        assert_ne!(before, after, "Renaming a file should change the hash");
+        assert_eq!(after, hash_content(path).unwrap(), "Hash should be stable");
+    }
 
     #[tokio::test]
     async fn test_detect_functions() {
