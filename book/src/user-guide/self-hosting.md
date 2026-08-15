@@ -21,6 +21,8 @@ More specifically, we will use the `sslip.io` service to create a domain name th
    - Allow TCP traffic on port `8080`
    - Allow TCP traffic on port `443`
 
+   Do not open any other ports: the deployer, engine, and database ports published by the compose file (`8000`, `8001`, `5432`) bypass the reverse proxy and its Basic Auth. Use the cloud firewall for this, not one running on the server itself (like `ufw`), which Docker's port publishing bypasses.
+
 4. Note the server's IP address
 
 5. SSH into the server:

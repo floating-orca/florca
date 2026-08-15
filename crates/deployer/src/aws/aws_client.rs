@@ -3,13 +3,13 @@ use anyhow::Result;
 use aws_config::BehaviorVersion;
 use aws_sdk_lambda::{
     client::Waiters,
-    operation::delete_function::DeleteFunctionError,
+    error::ProvideErrorMetadata,
     primitives::Blob,
     types::{FunctionCode, Runtime},
 };
 use florca_core::function::AwsFunctionConfig;
 use std::{env, fmt::Debug, path::Path, time::Duration};
-use tracing::{error, info, warn};
+use tracing::{info, warn};
 
 #[async_trait::async_trait]
 pub trait AwsClient: Debug + Send + Sync {
@@ -89,17 +89,20 @@ impl AwsClient for AwsClientImpl {
         &self,
         aws_function_qualifier: &AwsFunctionQualifier,
     ) -> Result<Option<Arn>> {
-        let result = self.client.list_functions().send().await?;
-        let arn = result
-            .functions()
-            .iter()
-            .find(|f| {
-                f.function_name
-                    .as_ref()
-                    .is_some_and(|n| n == aws_function_qualifier.as_ref())
-            })
-            .map(|f| Arn(f.function_arn.clone().unwrap().clone()));
-        Ok(arn)
+        let result = self
+            .client
+            .get_function()
+            .function_name(aws_function_qualifier.as_ref())
+            .send()
+            .await;
+        match result {
+            Ok(output) => Ok(output
+                .configuration()
+                .and_then(|c| c.function_arn.clone())
+                .map(Arn)),
+            Err(e) if is_not_found(&e) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
     }
 
     async fn update_function(
@@ -144,24 +147,21 @@ impl AwsClient for AwsClientImpl {
             .send()
             .await;
 
-        if let Err(e) = result {
-            if let Some(DeleteFunctionError::ResourceNotFoundException(_)) = e.as_service_error() {
-                warn!(
-                    function = aws_function_qualifier.as_ref(),
-                    "Function not found"
-                );
-            } else {
-                error!(
-                    function = aws_function_qualifier.as_ref(),
-                    "Error deleting AWS function: {}", e
-                );
-            }
-        } else {
-            info!(
+        match result {
+            Ok(_) => info!(
                 function = aws_function_qualifier.as_ref(),
                 "Deleted AWS function"
-            );
+            ),
+            Err(e) if is_not_found(&e) => warn!(
+                function = aws_function_qualifier.as_ref(),
+                "Function not found"
+            ),
+            Err(e) => return Err(e.into()),
         }
         Ok(())
     }
+}
+
+fn is_not_found(e: &impl ProvideErrorMetadata) -> bool {
+    e.code() == Some("ResourceNotFoundException")
 }

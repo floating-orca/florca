@@ -72,7 +72,6 @@ impl DeployerService for DeployerServiceImpl {
             return Err(DeleteDeploymentError::NotFound(name.clone()));
         };
         let function_entities = self.repository.get_functions(deployment.id).await?;
-        self.repository.delete_deployment(name).await?;
         for function_entity in function_entities {
             match function_entity {
                 FunctionEntity::Aws(aws) => {
@@ -90,6 +89,7 @@ impl DeployerService for DeployerServiceImpl {
                 FunctionEntity::Plugin(_plugin) => {}
             }
         }
+        self.repository.delete_deployment(name).await?;
         Ok(())
     }
 }

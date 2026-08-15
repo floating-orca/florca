@@ -6,7 +6,7 @@ use std::env;
 use std::fmt::Debug;
 use std::{path::Path, process::Stdio};
 use tokio::process::Command;
-use tracing::{error, info};
+use tracing::{info, warn};
 
 #[async_trait::async_trait]
 pub trait KnClient: Debug + Send + Sync {
@@ -137,22 +137,26 @@ impl KnClient for KnClientImpl {
             .output()
             .await;
 
-        if let Err(e) = result {
-            error!(
-                function = kn_function_qualifier.as_ref(),
-                "Error deleting Knative function: {}", e
-            );
-        } else if !result.as_ref().unwrap().status.success() {
-            error!(
-                function = kn_function_qualifier.as_ref(),
-                "Error deleting Knative function: {}",
-                String::from_utf8_lossy(&result?.stderr)
-            );
-        } else {
+        let output = result?;
+        if output.status.success() {
             info!(
                 function = kn_function_qualifier.as_ref(),
                 "Deleted Knative function"
             );
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            if stderr.to_lowercase().contains("function not found") {
+                warn!(
+                    function = kn_function_qualifier.as_ref(),
+                    "Function not found"
+                );
+            } else {
+                anyhow::bail!(
+                    "Error deleting Knative function {}: {}",
+                    kn_function_qualifier.as_ref(),
+                    stderr.trim()
+                );
+            }
         }
 
         Ok(())
