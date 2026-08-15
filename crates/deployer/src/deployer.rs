@@ -65,18 +65,11 @@ impl Deployer {
         let functions_to_deploy: Vec<FunctionToDeploy> =
             crate::detect::detect_functions(source_deployment_path).await?;
 
-        let mut previous_function_entities: Vec<FunctionEntity> = Vec::new();
-        if let Some(deployment) = self.repository.get_deployment(deployment_name).await? {
-            let existing_function_entities = self.repository.get_functions(deployment.id).await?;
-            self.repository.delete_deployment(deployment_name).await?;
-            self.undeploy_old_functions(
-                &deployment,
-                &existing_function_entities,
-                &functions_to_deploy,
-            )
-            .await?;
-            previous_function_entities = existing_function_entities;
-        }
+        let existing_deployment = self.repository.get_deployment(deployment_name).await?;
+        let previous_function_entities = match &existing_deployment {
+            Some(deployment) => self.repository.get_functions(deployment.id).await?,
+            None => Vec::new(),
+        };
 
         let mut functions_to_create: Vec<FunctionToCreate> = Vec::new();
         for function_to_deploy in &functions_to_deploy {
@@ -91,12 +84,26 @@ impl Deployer {
             );
         }
 
-        self.repository
-            .insert_deployment_with_functions(&CreateDeploymentParams::new(
-                deployment_name.as_ref().clone(),
-                functions_to_create,
-            ))
+        // The record is only touched once everything is deployed, so a failed
+        // deploy keeps the previous deployment intact.
+        if let Some(deployment) = existing_deployment {
+            self.undeploy_old_functions(
+                &deployment,
+                &previous_function_entities,
+                &functions_to_deploy,
+            )
             .await?;
+            self.repository
+                .replace_functions(deployment.id, &functions_to_create)
+                .await?;
+        } else {
+            self.repository
+                .insert_deployment_with_functions(&CreateDeploymentParams::new(
+                    deployment_name.as_ref().clone(),
+                    functions_to_create,
+                ))
+                .await?;
+        }
 
         Ok(())
     }

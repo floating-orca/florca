@@ -12,6 +12,11 @@ pub trait DeployerRepository: Debug + Send + Sync {
     async fn get_deployments(&self) -> Result<Vec<DeploymentEntity>>;
     async fn insert_deployment_with_functions(&self, params: &CreateDeploymentParams)
     -> Result<()>;
+    async fn replace_functions(
+        &self,
+        deployment_id: i32,
+        functions: &[FunctionToCreate],
+    ) -> Result<()>;
     async fn get_deployment(
         &self,
         deployment_name: &DeploymentName,
@@ -65,43 +70,22 @@ impl DeployerRepository for SqlxDeployerRepository {
                 .bind(&params.name)
                 .fetch_one(&mut *tx)
                 .await?;
-        for f in &params.functions {
-            match f {
-                FunctionToCreate::Aws(f) => {
-                    let query = "insert into functions (deployment_id, name, kind, location, hash) values ($1, $2, $3, $4, $5)";
-                    sqlx::query(query)
-                        .bind(deployment_id)
-                        .bind(&f.name)
-                        .bind("aws")
-                        .bind(&f.arn)
-                        .bind(&f.hash)
-                        .execute(&mut *tx)
-                        .await?;
-                }
-                FunctionToCreate::Kn(f) => {
-                    let query = "insert into functions (deployment_id, name, kind, location, hash) values ($1, $2, $3, $4, $5)";
-                    sqlx::query(query)
-                        .bind(deployment_id)
-                        .bind(&f.name)
-                        .bind("kn")
-                        .bind(&f.url)
-                        .bind(&f.hash)
-                        .execute(&mut *tx)
-                        .await?;
-                }
-                FunctionToCreate::Plugin(f) => {
-                    let query = "insert into functions (deployment_id, name, kind, location, blob) values ($1, $2, $3, $4, $5)";
-                    sqlx::query(query)
-                        .bind(deployment_id)
-                        .bind(&f.name)
-                        .bind("plugin")
-                        .bind(&f.file_name)
-                        .bind(Some(f.blob.as_slice()))
-                        .execute(&mut *tx)
-                        .await?;
-                }
-            }
-        }
+        insert_functions(&mut tx, deployment_id, &params.functions).await?;
+        tx.commit().await?;
+        Ok(())
+    }
+
+    async fn replace_functions(
+        &self,
+        deployment_id: i32,
+        functions: &[FunctionToCreate],
+    ) -> Result<()> {
+        let mut tx = self.pool.begin().await?;
+        sqlx::query("delete from functions where deployment_id = $1")
+            .bind(deployment_id)
+            .execute(&mut *tx)
+            .await?;
+        insert_functions(&mut tx, deployment_id, functions).await?;
         tx.commit().await?;
         Ok(())
     }
@@ -137,6 +121,51 @@ impl DeployerRepository for SqlxDeployerRepository {
             .await?;
         Ok(())
     }
+}
+
+async fn insert_functions(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    deployment_id: i32,
+    functions: &[FunctionToCreate],
+) -> Result<()> {
+    for f in functions {
+        match f {
+            FunctionToCreate::Aws(f) => {
+                let query = "insert into functions (deployment_id, name, kind, location, hash) values ($1, $2, $3, $4, $5)";
+                sqlx::query(query)
+                    .bind(deployment_id)
+                    .bind(&f.name)
+                    .bind("aws")
+                    .bind(&f.arn)
+                    .bind(&f.hash)
+                    .execute(&mut **tx)
+                    .await?;
+            }
+            FunctionToCreate::Kn(f) => {
+                let query = "insert into functions (deployment_id, name, kind, location, hash) values ($1, $2, $3, $4, $5)";
+                sqlx::query(query)
+                    .bind(deployment_id)
+                    .bind(&f.name)
+                    .bind("kn")
+                    .bind(&f.url)
+                    .bind(&f.hash)
+                    .execute(&mut **tx)
+                    .await?;
+            }
+            FunctionToCreate::Plugin(f) => {
+                let query = "insert into functions (deployment_id, name, kind, location, blob) values ($1, $2, $3, $4, $5)";
+                sqlx::query(query)
+                    .bind(deployment_id)
+                    .bind(&f.name)
+                    .bind("plugin")
+                    .bind(&f.file_name)
+                    .bind(Some(f.blob.as_slice()))
+                    .execute(&mut **tx)
+                    .await?;
+            }
+        }
+    }
+    Ok(())
 }
 
 pub mod create_deployment_params {
