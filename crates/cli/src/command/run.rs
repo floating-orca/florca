@@ -135,15 +135,15 @@ fn resolve_input(run_args: &RunCommand) -> Result<Option<Value>> {
         return Ok(run_args.input.clone());
     }
 
-    if run_args.input.is_some() {
-        anyhow::bail!("Conflicting input sources: stdin and --input. Use only one.");
-    }
-
     let mut buffer = String::new();
     io::stdin().read_to_string(&mut buffer)?;
     let trimmed = buffer.trim();
     if trimmed.is_empty() {
-        anyhow::bail!("Stdin is empty. Provide JSON via stdin or use --input.");
+        return Ok(run_args.input.clone());
+    }
+
+    if run_args.input.is_some() {
+        anyhow::bail!("Conflicting input sources: stdin and --input. Use only one.");
     }
 
     Ok(Some(util::parse_json(trimmed)?))
