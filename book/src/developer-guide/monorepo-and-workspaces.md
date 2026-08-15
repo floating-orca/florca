@@ -43,7 +43,7 @@ Lastly, the `fn` package provides types and utilities for plugin functions.
 To run tests for the Deno packages, you can use the following command in the root directory of the project:
 
 ```bash
-deno test
+deno test --allow-all
 ```
 
 ## The `workflows` directory

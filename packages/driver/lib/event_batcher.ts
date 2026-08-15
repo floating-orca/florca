@@ -9,7 +9,7 @@ export class EventBatcher implements EventSink {
   private readonly flushIntervalMs: number;
 
   private batch: DriverEvent[] = [];
-  private flushTimer: number | null = null;
+  private flushTimer: ReturnType<typeof setTimeout> | null = null;
   private flushChain: Promise<void> = Promise.resolve();
 
   constructor(runId: RunId, maxBatchSize = 100, flushIntervalMs = 100) {

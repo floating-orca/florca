@@ -38,5 +38,31 @@ export const invokeKnFunction = async (
     body: JSON.stringify(body),
   });
 
+  if (!response.ok) {
+    const responseBody = await response.text().catch(() => "");
+    const error = describeError(responseBody);
+    const message = error
+      ? `Knative function ${url} failed with error: ${error}`
+      : `Knative function ${url} failed with status code: ${response.status}`;
+    const invocationLogger = driverState.invocationLoggerFactory
+      .forInvocation(invocationId, invokeArgs.functionName);
+    invocationLogger.logEvent("ERROR", message);
+    if (!error && responseBody) {
+      invocationLogger.logEvent("ERROR", responseBody);
+    }
+    throw new Error(message);
+  }
+
   return await response.json();
 };
+
+// Functions may describe their failure as {"error": ...}, like the scaffolded
+// templates do.
+function describeError(responseBody: string): string | undefined {
+  try {
+    const { error } = JSON.parse(responseBody);
+    return typeof error === "string" ? error : undefined;
+  } catch {
+    return undefined;
+  }
+}
