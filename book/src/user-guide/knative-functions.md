@@ -16,14 +16,43 @@ Note that Knative functions can currently only be deployed and invoked when the 
 
 - Engine and deployer running natively
   - See [Build from source#Option 2: Run natively](./build-from-source.md#option-2-run-natively) for instructions on how to do this
-- [Kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
+- [Kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation) `v0.29.0`
   - No need to create a cluster, as the `kn quickstart` command will do that for you
-- [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) `v1.32.8`
   - No need to configure it, as the `kn quickstart` command will do that for you
 - The following Knative binaries in your `PATH`:
-  - [`kn`](https://knative.dev/docs/install/quickstart-install/#install-the-knative-cli)
-  - [`kn-quickstart`](https://knative.dev/docs/install/quickstart-install/#install-the-knative-quickstart-plugin)
-  - [`func`](https://knative.dev/docs/functions/install-func/)
+  - [`kn`](https://knative.dev/docs/install/quickstart-install/#install-the-knative-cli) `knative-v1.18.0`
+  - [`kn-quickstart`](https://knative.dev/docs/install/quickstart-install/#install-the-knative-quickstart-plugin) `knative-v1.18.0`
+  - [`func`](https://knative.dev/docs/functions/install-func/) `knative-v1.18.1`
+
+<div class="warning">
+
+Please install exactly these versions rather than the latest ones.
+
+Newer releases of `func` build function images in a way that is incompatible with the Knative function templates shipped with _FloatingOrca_, so building or deploying a function will fail.
+
+The [Knative on a self-hosted server](./knative-on-a-self-hosted-server.md) chapter contains installation commands for these exact versions.
+
+</div>
+
+### Rootless Docker
+
+If you are running Docker in rootless mode, make sure `slirp4netns` is installed before creating the cluster:
+
+```bash
+sudo dnf install slirp4netns
+systemctl --user restart docker
+```
+
+RootlessKit chooses its network backend when the Docker daemon starts: `slirp4netns` if that binary is present, otherwise `pasta` with the `implicit` port driver. The `pasta` fallback does not publish ports bound to `127.0.0.1` on the host, and Kind publishes the cluster's API server on `127.0.0.1`.
+
+Without `slirp4netns`, the cluster is created successfully, but every subsequent `kubectl` call fails with `connection refused` and the `kn quickstart` command aborts with:
+
+```
+failed to create local registry config map: exit status 1
+```
+
+_Because the backend is chosen at daemon start, installing the package only takes effect after restarting the Docker service._
 
 ## Setup
 
@@ -113,22 +142,7 @@ If the deployment fails, pods could not be started, you cannot access the intern
   systemctl --user restart docker
   ```
 
-- Try to delete the Kind cluster and start over, but this time with the firewall and (if applicable) SELinux disabled.
-
-  To delete the Kind cluster, run:
-
-  ```bash
-  kind delete cluster
-  ```
-
-  On Fedora, you can temporarily disable the firewall and SELinux by running:
-
-  ```bash
-  sudo systemctl stop firewalld
-  sudo setenforce 0
-  ```
-
-  Then, run the `kn quickstart` command again:
+- If the installation fails partway through (for example, after `Core installed...`), run the `kn quickstart` command again and answer `y` when it offers to delete and recreate the existing cluster:
 
   ```bash
   kn quickstart kind --registry --kubernetes-version 1.32.8
@@ -141,3 +155,24 @@ If the deployment fails, pods could not be started, you cannot access the intern
   ```
 
   *See [`kindest/node`](https://hub.docker.com/r/kindest/node/) for available versions.*
+
+- If a function URL cannot be resolved at all, and the error ends with `dns error: failed to lookup address information: No address associated with hostname`, then your DNS resolver is most likely discarding the answer. Many routers enable a _DNS rebind protection_ that drops public DNS records pointing back into your own network, and `sslip.io` records resolve to `127.0.0.1` by design.
+
+  To confirm, compare your own resolver against a public one:
+
+  ```bash
+  dig +short 127-0-0-1.sslip.io
+  dig +short @9.9.9.9 127-0-0-1.sslip.io
+  ```
+
+  If only the second command returns `127.0.0.1`, rebind protection is the cause.
+
+  Fix it by adding `sslip.io` as an exception in your router's DNS rebind protection settings. The bare domain is enough and covers all subdomains.
+
+  If you cannot change the router configuration, add the function hostnames to your `/etc/hosts` file instead:
+
+  ```
+  127.0.0.1 kn-example-start.default.127.0.0.1.sslip.io
+  ```
+
+  _Note that this requires one line per deployed function._
