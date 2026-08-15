@@ -96,6 +96,7 @@ impl RunService {
             .send()
             .await
             .context("Failed to send request")?;
+        let response = crate::driver_client::require_success(response).await?;
         if response.content_length() == Some(0) {
             return Ok(Value::Null);
         }

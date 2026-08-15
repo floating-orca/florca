@@ -10,7 +10,7 @@ import { EventBatcher } from "./lib/event_batcher.ts";
 import { EventSinkInvocationLoggerFactory } from "./lib/invocation_logger.ts";
 import { EventSinkWorkflowLogger } from "./lib/workflow_logger.ts";
 import type { InvokeArgs } from "./lib/invoke_args.ts";
-import { run } from "./lib/run.ts";
+import { describeThrown, run } from "./lib/run.ts";
 import type { DriverState } from "./lib/driver_state.ts";
 
 if (Deno.args.length !== 1) {
@@ -94,6 +94,12 @@ app.get("/:id", async (c: Context) => {
     ret = await messageHandler({});
   }
   return c.html(ret);
+});
+
+app.onError((err, c) => {
+  console.error(err);
+  const { kind, message } = describeThrown(err);
+  return c.text(`${kind}: ${message}`, 500);
 });
 
 const server = Deno.serve(

@@ -45,8 +45,8 @@ impl IntoResponse for DriverEventError {
                 (StatusCode::NOT_FOUND, self.to_string()).into_response()
             }
             DriverEventError::Other(err) => {
-                error!("Driver event error: {}", err);
-                (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
+                error!("{:?}", err);
+                (StatusCode::INTERNAL_SERVER_ERROR, format!("{err:#}")).into_response()
             }
         }
     }

@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use florca_core::driver::DriverArgs;
 use florca_core::run::{RunId, RunRequest};
 use std::{path::Path, process::Stdio};
@@ -16,7 +16,8 @@ pub fn spawn_driver(
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .env("DENO_TLS_CA_STORE", "system")
-        .spawn()?;
+        .spawn()
+        .context("Failed to spawn deno")?;
     Ok(child)
 }
 

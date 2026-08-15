@@ -866,6 +866,11 @@
           "jsr:@std/path@^1.1.4",
           "npm:@aws-sdk/client-lambda@^3.1019.0"
         ]
+      },
+      "packages/fn": {
+        "dependencies": [
+          "jsr:@std/expect@^1.0.18"
+        ]
       }
     }
   }

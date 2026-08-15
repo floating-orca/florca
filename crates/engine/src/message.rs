@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::driver_client::require_success;
 use crate::error::MessageError;
 use crate::process::ProcessManager;
 use anyhow::Context;
@@ -65,6 +66,7 @@ impl MessageService {
             .send()
             .await
             .context("Failed to send request")?;
+        let response = require_success(response).await?;
         if response.content_length() == Some(0) {
             return Ok(Value::Null);
         }
@@ -109,6 +111,7 @@ impl MessageService {
             .send()
             .await
             .context("Failed to send request")?;
+        let response = require_success(response).await?;
         if response.content_length() == Some(0) {
             return Ok(String::new());
         }

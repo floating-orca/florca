@@ -38,11 +38,11 @@ impl IntoResponse for RunWorkflowError {
             }
             RunWorkflowError::Io(err) => {
                 error!("{:?}", err);
-                (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
+                (StatusCode::INTERNAL_SERVER_ERROR, format!("{err}")).into_response()
             }
             RunWorkflowError::Other(err) => {
                 error!("{:?}", err);
-                (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
+                (StatusCode::INTERNAL_SERVER_ERROR, format!("{err:#}")).into_response()
             }
         }
     }

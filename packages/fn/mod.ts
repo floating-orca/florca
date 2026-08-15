@@ -61,6 +61,14 @@ export async function sendMessage(
       body: JSON.stringify(message),
     },
   );
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(
+      `Message failed with status code ${response.status}${
+        body ? `: ${body}` : ""
+      }`,
+    );
+  }
   return await response.json();
 }
 

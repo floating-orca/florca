@@ -12,6 +12,7 @@ use tracing::warn;
 
 mod deployer_client;
 pub mod driver;
+mod driver_client;
 mod error;
 mod event_processor;
 mod http;

@@ -49,11 +49,22 @@ impl DriverManager {
         run_request: RunRequest,
         temporary_directory_path: &Path,
     ) -> Result<()> {
-        let command_result = self
-            .run_driver(run_request, temporary_directory_path)
-            .await?;
+        let command_result = self.run_driver(run_request, temporary_directory_path).await;
         self.remove_driver_process().await?;
-        self.process_driver_process_result(command_result).await?;
+        match command_result {
+            Ok(command_result) => self.process_driver_process_result(command_result).await?,
+            Err(err) => {
+                error!(run = %self.run_id, ?err, "Driver process failed to start");
+                self.finalize_run(
+                    false,
+                    &serde_json::json!({
+                        "kind": "DriverProcessFailedToStart",
+                        "message": format!("Driver process failed to start: {err:#}"),
+                    }),
+                )
+                .await?;
+            }
+        }
         Ok(())
     }
 

@@ -26,7 +26,7 @@ impl IntoResponse for ReportError {
             }
             ReportError::Other(err) => {
                 error!("{:?}", err);
-                (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
+                (StatusCode::INTERNAL_SERVER_ERROR, format!("{err:#}")).into_response()
             }
         }
     }

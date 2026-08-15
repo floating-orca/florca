@@ -1,5 +1,8 @@
 {
   "name": "@florca/fn",
   "version": "0.9.0",
-  "exports": "./mod.ts"
+  "exports": "./mod.ts",
+  "imports": {
+    "@std/expect": "jsr:@std/expect@^1.0.18"
+  }
 }

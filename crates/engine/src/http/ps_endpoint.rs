@@ -19,6 +19,6 @@ pub async fn get_running_workflows(
 impl IntoResponse for PsError {
     fn into_response(self) -> Response {
         error!("{:?}", self.0);
-        (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
+        (StatusCode::INTERNAL_SERVER_ERROR, format!("{:#}", self.0)).into_response()
     }
 }
