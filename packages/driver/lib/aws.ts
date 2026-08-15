@@ -61,7 +61,7 @@ export const invokeAwsFunction = async (
   }
 
   const textDecoder = new TextDecoder();
-  const result = JSON.parse(textDecoder.decode(Payload));
+  const payload = textDecoder.decode(Payload);
 
   let logs: string | undefined;
   if (LogResult) {
@@ -73,18 +73,33 @@ export const invokeAwsFunction = async (
     invokeArgs.functionName,
   );
   if (FunctionError) {
-    const message =
-      `AWS Lambda function ${arn} failed with error: ${FunctionError}`;
+    const message = `AWS Lambda function ${arn} failed with error: ${
+      describeError(payload) ?? FunctionError
+    }`;
+    invocationLogger.logEvent("ERROR", message);
     if (logs) {
-      invocationLogger.logEvent("ERROR", message);
       invocationLogger.logEvent("ERROR", logs);
     }
     throw new Error(message);
-  } else {
-    if (logs) {
-      invocationLogger.logEvent("DEBUG", logs);
-    }
   }
 
-  return result;
+  if (logs) {
+    invocationLogger.logEvent("DEBUG", logs);
+  }
+
+  return JSON.parse(payload);
 };
+
+// FunctionError only says whether the function handled the error. The error
+// itself is in the payload.
+function describeError(payload: string): string | undefined {
+  try {
+    const { errorType, errorMessage } = JSON.parse(payload);
+    if (!errorMessage) {
+      return undefined;
+    }
+    return errorType ? `${errorType}: ${errorMessage}` : errorMessage;
+  } catch {
+    return undefined;
+  }
+}
