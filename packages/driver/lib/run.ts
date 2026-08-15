@@ -19,6 +19,13 @@ export class FunctionNotFoundError extends Error {
   }
 }
 
+// Functions are not guaranteed to throw an Error.
+export function describeThrown(e: unknown): { kind: string; message: string } {
+  return e instanceof Error
+    ? { kind: e.constructor.name, message: e.message }
+    : { kind: "UnknownError", message: String(e) };
+}
+
 // "Run" while there is a next function to invoke
 export const run = async (
   args: InvokeArgs,
@@ -67,12 +74,9 @@ const invoke = async (
     );
     return [invocationId, response];
   } catch (e) {
-    if (e instanceof Error) {
-      const error = { kind: e.constructor.name, message: e.message };
-      driverState.eventSink.addEvent(
-        newFailureEvent(args, invocationId, startTime, error),
-      );
-    }
+    driverState.eventSink.addEvent(
+      newFailureEvent(args, invocationId, startTime, describeThrown(e)),
+    );
     throw e;
   }
 };

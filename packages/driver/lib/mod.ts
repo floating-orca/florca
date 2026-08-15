@@ -5,7 +5,7 @@ import type {
   ReportReadinessRequest,
   RunId,
 } from "@florca/types";
-import { run } from "./run.ts";
+import { describeThrown, run } from "./run.ts";
 import { resolve } from "@std/path";
 import { getPluginFilePath, namesOfShippedPlugins } from "./functions/mod.ts";
 import type { DriverState } from "./driver_state.ts";
@@ -75,16 +75,9 @@ export async function runWorkflow(
       },
     };
   } catch (e) {
-    if (e instanceof Error) {
-      driverResult = {
-        error: {
-          kind: e.constructor.name,
-          message: e.message,
-        },
-      };
-    } else {
-      throw e;
-    }
+    driverResult = {
+      error: describeThrown(e),
+    };
   }
   return driverResult;
 }
