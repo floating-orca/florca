@@ -13,6 +13,13 @@ DEPLOYMENT="${EXAMPLE}-test"
   assert_output --partial 'Error: What a terrible failure!'
 }
 
+@test "run $EXAMPLE example workflow with a non-Error throw" {
+  florca deploy -w "$BATS_TEST_DIRNAME" "$DEPLOYMENT"
+  run florca run -d "$DEPLOYMENT" -e throwingString --wait
+  assert_output --partial 'Success: false'
+  assert_output --partial 'Error: Not even an Error!'
+}
+
 teardown() {
   florca delete "$DEPLOYMENT" || true
 }

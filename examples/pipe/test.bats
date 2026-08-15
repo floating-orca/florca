@@ -20,6 +20,13 @@ DEPLOYMENT="${EXAMPLE}-test"
   assert_output --partial 'Output: {"message":"  Hello, World!"}'
 }
 
+@test "run $EXAMPLE example workflow with --input and empty stdin" {
+  florca deploy -w "$BATS_TEST_DIRNAME" "$DEPLOYMENT"
+  # florca run --input ... < /dev/null
+  run florca run -d "$DEPLOYMENT" --input '{"text":"Hello, World!","indentation":2}' --wait < /dev/null
+  assert_output --partial 'Output: {"message":"  Hello, World!"}'
+}
+
 @test "run $EXAMPLE example workflow with both stdin and --input" {
   florca deploy -w "$BATS_TEST_DIRNAME" "$DEPLOYMENT"
   # cat input.json | florca run --input ...
