@@ -11,4 +11,7 @@ def handle(request_body: dict) -> dict:
 
 
 def main(c):
-    return handle(c.request.get_json()), 200
+    try:
+        return handle(c.request.get_json()), 200
+    except Exception as e:
+        return {"error": f"{type(e).__name__}: {e}"}, 500
