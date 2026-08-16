@@ -1,5 +1,4 @@
 use anyhow::Result;
-use florca_core::run::AllOrRunId;
 use inspection::InspectionService;
 use kill::KillService;
 use message::MessageService;
@@ -44,7 +43,10 @@ pub async fn init() -> Result<Arc<AppState>> {
         process_manager.clone(),
     ));
     let message_service = Arc::new(MessageService::new(process_manager.clone()));
-    let kill_service = Arc::new(KillService::new(process_manager.clone()));
+    let kill_service = Arc::new(KillService::new(
+        process_manager.clone(),
+        engine_repository.clone(),
+    ));
     let inspection_service = Arc::new(InspectionService::new(
         engine_repository.clone(),
         process_manager.clone(),
@@ -66,25 +68,20 @@ pub async fn init() -> Result<Arc<AppState>> {
     Ok(Arc::new(state))
 }
 
-/// Waits for a SIGTERM signal and then shuts down the driver processes.
+/// Waits for a SIGTERM or SIGINT signal.
 ///
 /// This function is intended to be used as a graceful shutdown signal handler.
 ///
 /// # Panics
 ///
-/// Panics if the signal handler cannot be installed or if the driver proccesses
-/// cannot be killed.
-pub async fn shutdown_signal(kill_service: Arc<KillService>) {
-    let terminate = async {
-        signal::unix::signal(SignalKind::terminate())
-            .expect("failed to install signal handler")
-            .recv()
-            .await;
-    };
-    terminate.await;
-    warn!("SIGTERM received, shutting down");
-    kill_service
-        .kill_runs(AllOrRunId::All)
-        .await
-        .expect("Could not kill processes");
+/// Panics if the signal handlers cannot be installed.
+pub async fn shutdown_signal() {
+    let mut terminate =
+        signal::unix::signal(SignalKind::terminate()).expect("failed to install signal handler");
+    let mut interrupt =
+        signal::unix::signal(SignalKind::interrupt()).expect("failed to install signal handler");
+    tokio::select! {
+        _ = terminate.recv() => warn!("SIGTERM received, shutting down"),
+        _ = interrupt.recv() => warn!("SIGINT received, shutting down"),
+    }
 }

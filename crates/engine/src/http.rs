@@ -41,9 +41,11 @@ pub async fn serve(shared_state: Arc<AppState>) -> Result<()> {
     let port = std::env::var("PORT").unwrap_or_else(|_| "8001".to_string());
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await?;
     info!("engine listening on port {port}");
-    let kill_service = shared_state.kill_service.clone();
     axum::serve(listener, app)
-        .with_graceful_shutdown(crate::shutdown_signal(kill_service))
+        .with_graceful_shutdown(crate::shutdown_signal())
         .await?;
+    // Kill the runs only after the server stopped accepting requests, so no
+    // run can slip in during the shutdown and end up orphaned.
+    shared_state.kill_service.shutdown().await;
     Ok(())
 }
