@@ -18,6 +18,16 @@ DEPLOYMENT="${EXAMPLE}-test"
   fi
 }
 
+@test "deployment appears in list and disappears after delete" {
+  florca deploy -w "$BATS_TEST_DIRNAME" "$DEPLOYMENT"
+  run florca list
+  assert_output --partial "$DEPLOYMENT"
+
+  florca delete "$DEPLOYMENT"
+  run florca list
+  refute_output --partial "$DEPLOYMENT"
+}
+
 teardown() {
   florca delete "$DEPLOYMENT" || true
 }

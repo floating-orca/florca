@@ -35,6 +35,13 @@ DEPLOYMENT="${EXAMPLE}-test"
 
   run florca inspect "$run_id"
   assert_output --partial 'Output: "My Name"'
+
+  # Also check the inspect flags while we have a finished run with known output
+  run florca inspect --latest
+  assert_output --partial 'Output: "My Name"'
+
+  run bats_pipe florca inspect --json "$run_id" \| jq -r '.output'
+  assert_output 'My Name'
 }
 
 teardown() {
