@@ -212,8 +212,12 @@ fn still_relevant(
                         && f.name() == &function_entity.raw().name;
                 }
                 FunctionConfig::Kn(_kn_function_config) => {
+                    // Knative service names are lowercased, so names that
+                    // differ only in case map to the same service.
                     return matches!(function_entity, FunctionEntity::Kn(_))
-                        && f.name() == &function_entity.raw().name;
+                        && f.name()
+                            .as_ref()
+                            .eq_ignore_ascii_case(function_entity.raw().name.as_ref());
                 }
             }
         }
@@ -278,7 +282,7 @@ fn validate_kn_names(
 mod tests {
     use super::*;
     use crate::detect::RemoteFunctionToDeploy;
-    use florca_core::function::{AwsFunctionConfig, KnFunctionConfig};
+    use florca_core::function::{AwsFunctionConfig, KnFunctionConfig, RawFunctionEntity};
 
     fn function(name: &str, config: FunctionConfig) -> FunctionToDeploy {
         FunctionToDeploy::Remote(RemoteFunctionToDeploy {
@@ -296,6 +300,25 @@ mod tests {
                 runtime: "python".to_string(),
             }),
         )
+    }
+
+    fn kn_entity(name: &str) -> FunctionEntity {
+        FunctionEntity::Kn(RawFunctionEntity {
+            id: 1,
+            deployment_id: 1,
+            name: name.into(),
+            kind: "kn".to_string(),
+            location: String::new(),
+            hash: None,
+            blob: None,
+        })
+    }
+
+    #[test]
+    fn test_case_renamed_kn_function_stays_relevant() {
+        let functions = vec![kn_function("fetchdata")];
+        assert!(still_relevant(&functions, &kn_entity("fetchData")));
+        assert!(!still_relevant(&functions, &kn_entity("other")));
     }
 
     #[test]
