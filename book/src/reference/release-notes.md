@@ -2,6 +2,23 @@
 
 _See the [Upgrade](../user-guide/upgrade.md) chapter for instructions on how to upgrade to the latest version._
 
+## v0.10.0
+
+- Let `florca run` read the workflow input from stdin as an alternative to `--input`
+- Include file names in the hash that decides whether a function is redeployed
+- Reuse AWS Lambda clients across invocations
+- Fix Knative Python functions failing to start by pinning their dependencies
+- Fail invocations when a Knative function responds with a non-2xx status
+- Report the actual error of failed AWS Lambda and Knative functions
+- Return structured errors from the Knative Python function template
+- Report failing functions that throw something other than an `Error`
+- Fix the function lookup in AWS accounts with more than 50 Lambda functions
+- Fail `florca delete` when cloud resources cannot be deleted
+- Keep the previous deployment when a redeploy fails
+- Report actual error causes instead of a generic "Internal server error"
+- Book: Pin Knative tool versions and extend the setup and troubleshooting guides
+- Additional example workflows
+
 ## v0.9.0
 
 - Use `UUID`s for invocation IDs instead of `SERIAL` IDs
