@@ -16,11 +16,10 @@ use reqwest::StatusCode;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::net::TcpListener;
-use tokio::sync::RwLock;
 use tokio_util::io::ReaderStream;
 use tracing::{error, info, warn};
 
-pub async fn serve(shared_state: Arc<RwLock<AppState>>) -> Result<()> {
+pub async fn serve(shared_state: Arc<AppState>) -> Result<()> {
     let app = Router::new()
         .route("/", get(list_deployments).post(deploy))
         .route("/{name}", get(fetch_deployment).delete(delete_deployment))
@@ -34,19 +33,14 @@ pub async fn serve(shared_state: Arc<RwLock<AppState>>) -> Result<()> {
 }
 
 pub async fn list_deployments(
-    State(state): State<Arc<RwLock<AppState>>>,
+    State(state): State<Arc<AppState>>,
 ) -> axum::response::Result<Json<Vec<DeploymentName>>, ListDeploymentsError> {
-    let deployments = state
-        .read()
-        .await
-        .deployer_service
-        .list_deployments()
-        .await?;
+    let deployments = state.deployer_service.list_deployments().await?;
     Ok(Json(deployments))
 }
 
 pub async fn deploy(
-    State(state): State<Arc<RwLock<AppState>>>,
+    State(state): State<Arc<AppState>>,
     multipart: Multipart,
 ) -> axum::response::Result<(), DeployError> {
     async fn extract_bytes_and_name(
@@ -75,8 +69,6 @@ pub async fn deploy(
     }
     let (bytes, deployment_name, force) = extract_bytes_and_name(multipart).await?;
     state
-        .write()
-        .await
         .deployer_service
         .deploy(&deployment_name, &bytes, force)
         .await
@@ -84,14 +76,9 @@ pub async fn deploy(
 
 pub async fn fetch_deployment(
     Path(name): Path<DeploymentName>,
-    State(state): State<Arc<RwLock<AppState>>>,
+    State(state): State<Arc<AppState>>,
 ) -> axum::response::Result<Body> {
-    let file = state
-        .read()
-        .await
-        .deployer_service
-        .fetch_deployment(&name)
-        .await?;
+    let file = state.deployer_service.fetch_deployment(&name).await?;
     let stream = ReaderStream::new(file);
     let body = Body::from_stream(stream);
     Ok(body)
@@ -99,14 +86,9 @@ pub async fn fetch_deployment(
 
 pub async fn delete_deployment(
     Path(name): Path<String>,
-    State(state): State<Arc<RwLock<AppState>>>,
+    State(state): State<Arc<AppState>>,
 ) -> axum::response::Result<(), DeleteDeploymentError> {
-    state
-        .write()
-        .await
-        .deployer_service
-        .delete_deployment(&name.into())
-        .await
+    state.deployer_service.delete_deployment(&name.into()).await
 }
 
 impl IntoResponse for ListDeploymentsError {
