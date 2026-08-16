@@ -2,6 +2,18 @@
 
 _See the [Upgrade](../user-guide/upgrade.md) chapter for instructions on how to upgrade to the latest version._
 
+## v0.11.0
+
+- Require Basic Auth directly on the engine and deployer endpoints, not only at the reverse proxy
+- Represent chains as arrays in the inspection JSON, so long workflows no longer break inspection (breaking for `--json` consumers)
+- Record invocations that are still in flight when a run ends as abandoned
+- Kill runs reliably: runs still starting are killed once their driver appears, stuck drivers are force-killed after 60 seconds, and killed runs stay visible until their process exits
+- Log the stack of failed invocations
+- Bind the per-run driver server to loopback
+- Fail fast with a clear error when the `func` CLI is missing
+- Fix deploys of workflows containing symlinks
+- Book: Add an error handling chapter
+
 ## v0.10.0
 
 - Let `florca run` read the workflow input from stdin as an alternative to `--input`
