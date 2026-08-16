@@ -18,6 +18,12 @@ DEPLOYMENT="${EXAMPLE}-test"
   assert_output --partial 'Output: 30'
 }
 
+@test "run $EXAMPLE example workflow with map but no reduce" {
+  florca deploy -w "$BATS_TEST_DIRNAME" "$DEPLOYMENT"
+  run florca run -d "$DEPLOYMENT" -e "startNoReduce" --wait
+  assert_output --partial 'Output: [2,4,6,8,10]'
+}
+
 teardown() {
   florca delete "$DEPLOYMENT" || true
 }
