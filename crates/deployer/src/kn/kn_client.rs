@@ -1,5 +1,5 @@
 use crate::kn::kn_qualifier::{KnFunctionQualifier, KnUrl};
-use anyhow::Result;
+use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use florca_core::function::KnFunctionConfig;
 use std::env;
@@ -23,6 +23,7 @@ pub trait KnClient: Debug + Send + Sync {
     ) -> Result<Option<KnUrl>>;
 
     async fn delete_kn_function(&self, kn_function_qualifier: &KnFunctionQualifier) -> Result<()>;
+    async fn is_available(&self) -> bool;
 }
 
 #[derive(Debug)]
@@ -59,7 +60,7 @@ impl KnClient for KnClientImpl {
         let registry =
             env::var("CONTAINER_REGISTRY").unwrap_or_else(|_| "localhost:5001".to_string());
 
-        let mut build_output = Command::new("func")
+        let mut build_process = Command::new("func")
             .arg("build")
             .arg("-v")
             .arg("--path")
@@ -68,9 +69,10 @@ impl KnClient for KnClientImpl {
             .arg(&registry)
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
-            .spawn()?;
+            .spawn()
+            .context("Failed to start func")?;
 
-        let exit_status = build_output.wait().await?;
+        let exit_status = build_process.wait().await?;
 
         if !exit_status.success() {
             anyhow::bail!("Error building Knative function {kn_function_qualifier}");
@@ -112,7 +114,8 @@ impl KnClient for KnClientImpl {
             .arg("--output")
             .arg("json")
             .output()
-            .await?;
+            .await
+            .context("Failed to start func")?;
         if !output.status.success() {
             anyhow::bail!(
                 "Error listing Knative functions: {}",
@@ -130,6 +133,10 @@ impl KnClient for KnClientImpl {
         Ok(deployed_function.map(|f| KnUrl(f.url)))
     }
 
+    async fn is_available(&self) -> bool {
+        Command::new("func").arg("version").output().await.is_ok()
+    }
+
     async fn delete_kn_function(&self, kn_function_qualifier: &KnFunctionQualifier) -> Result<()> {
         let result = Command::new("func")
             .arg("delete")
@@ -137,7 +144,7 @@ impl KnClient for KnClientImpl {
             .output()
             .await;
 
-        let output = result?;
+        let output = result.context("Failed to start func")?;
         if output.status.success() {
             info!(
                 function = kn_function_qualifier.as_ref(),
@@ -190,7 +197,8 @@ async fn get_url_for_kn_function(kn_function_qualifier: &KnFunctionQualifier) ->
         .arg("--output")
         .arg("json")
         .output()
-        .await?;
+        .await
+        .context("Failed to start func")?;
     if !result.status.success() {
         anyhow::bail!(
             "Could not find Knative function {}: {}",

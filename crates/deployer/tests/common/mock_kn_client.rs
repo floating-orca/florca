@@ -51,4 +51,8 @@ impl KnClient for MockKnClient {
         functions.retain(|f| f != _kn_function_qualifier);
         Ok(())
     }
+
+    async fn is_available(&self) -> bool {
+        true
+    }
 }

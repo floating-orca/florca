@@ -1,6 +1,6 @@
 use crate::aws::AwsClient;
 use crate::aws::aws_qualifier::AwsFunctionQualifier;
-use crate::detect::{FunctionToDeploy, PluginFunctionToDeploy};
+use crate::detect::{FunctionToDeploy, PluginFunctionToDeploy, RemoteFunctionToDeploy};
 use crate::errors::DeployError;
 use crate::kn::KnClient;
 use crate::kn::kn_qualifier::KnFunctionQualifier;
@@ -64,7 +64,22 @@ impl Deployer {
     ) -> Result<(), DeployError> {
         let functions_to_deploy: Vec<FunctionToDeploy> =
             crate::detect::detect_functions(source_deployment_path).await?;
+
         validate_kn_names(deployment_name, &functions_to_deploy)?;
+        let has_kn_functions = functions_to_deploy.iter().any(|function_to_deploy| {
+            matches!(
+                function_to_deploy,
+                FunctionToDeploy::Remote(RemoteFunctionToDeploy {
+                    config: FunctionConfig::Kn(_),
+                    ..
+                })
+            )
+        });
+        if has_kn_functions && !self.kn_client.is_available().await {
+            return Err(DeployError::Other(anyhow::anyhow!(
+                "Knative functions require the `func` CLI, which was not found"
+            )));
+        }
 
         let existing_deployment = self.repository.get_deployment(deployment_name).await?;
         let previous_function_entities = match &existing_deployment {
