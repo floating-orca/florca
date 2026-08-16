@@ -43,10 +43,10 @@ More specifically, we will use the `sslip.io` service to create a domain name th
    ssh root@<your-server-ip>
    ```
 
-8. Install `curl` and `jq`:
+8. Install `curl`:
 
    ```bash
-   apt install -y curl jq
+   apt install -y curl
    ```
 
 9. Install Docker using their convenience script:
@@ -59,14 +59,7 @@ More specifically, we will use the `sslip.io` service to create a domain name th
 
     ```bash
     export VERSION=<florca-version> # e.g., 0.10.0
-    export USERNAME=<your-github-username>
-     export PERSONAL_ACCESS_TOKEN=<your-personal-access-token> # GitHub personal access token (classic) with `write:packages` and `delete:packages` scopes
-
-    release_id=$(curl -s -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" https://api.github.com/repos/floating-orca/florca/releases | jq -r ".[] | select(.tag_name == \"v${VERSION}\") | .id")
-
-    asset_url=$(curl -s -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" https://api.github.com/repos/floating-orca/florca/releases/${release_id}/assets | jq -r ".[] | select(.name == \"florca-${VERSION}-linux-amd64.tar.gz\") | .url")
-
-    curl -L -H "Authorization: token ${PERSONAL_ACCESS_TOKEN}" -H "Accept: application/octet-stream" "$asset_url" -o "florca-${VERSION}-linux-amd64.tar.gz"
+    curl -LO "https://github.com/floating-orca/florca/releases/download/v${VERSION}/florca-${VERSION}-linux-amd64.tar.gz"
     ```
 
 11. Extract the release asset:
@@ -84,7 +77,6 @@ More specifically, we will use the `sslip.io` service to create a domain name th
 13. Pull the Docker images:
 
     ```bash
-    echo "${PERSONAL_ACCESS_TOKEN}" | docker login ghcr.io --username "${USERNAME}" --password-stdin
     docker pull ghcr.io/floating-orca/deployer:${VERSION}
     docker pull ghcr.io/floating-orca/engine:${VERSION}
     ```

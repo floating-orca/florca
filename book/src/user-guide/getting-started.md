@@ -101,31 +101,9 @@ systemctl --user restart docker
 
 Finally, make sure that the rootless Docker daemon is allowed to bind to port `443` by following the instructions described at <https://docs.docker.com/engine/security/rootless/tips/#exposing-privileged-ports>.
 
-## Connecting to GitHub's container registry
+## Pull the Docker images
 
-To be able to pull the pre-built Docker images, you'll need to log in to GitHub's container registry.
-
-### Obtain a personal access token (classic)
-
-If you don't have a personal access token (classic) yet, follow these steps to create one:
-
-- Navigate to <https://github.com/settings/tokens>
-- Click on the _Generate new token_ dropdown and select _Generate new token (classic)_
-- Enter a descriptive note
-- Select the `write:packages` and `delete:packages` scopes
-- Click _Generate token_ and copy the token
-
-### Log in to the container registry
-
-In a terminal, with your GitHub username and your personal access token (classic) at hand, run:
-
-```bash
-docker login ghcr.io
-```
-
-### Pull the Docker images
-
-Now you can pull the pre-built Docker images:
+Pull the pre-built Docker images:
 
 ```bash
 docker pull ghcr.io/floating-orca/deployer:0.10.0
