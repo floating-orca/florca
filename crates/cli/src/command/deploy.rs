@@ -72,27 +72,37 @@ fn get_deployment_name(deploy_args: &DeployCommand) -> Result<String> {
 }
 
 fn zip_workflow(workflow_path: impl AsRef<Path>) -> Result<TempPath> {
+    let workflow_path = workflow_path.as_ref();
     let named_zip_file = NamedTempFile::with_suffix(".zip")?;
     let mut zip_writer = ZipWriter::new(named_zip_file.as_file());
-    let prefix = workflow_path.as_ref().canonicalize()?;
     let walker = WalkBuilder::new(workflow_path)
         .standard_filters(false)
         .add_custom_ignore_filename(".florcaignore")
         .build();
     for entry in walker.filter_map(std::result::Result::ok) {
-        let local_path = entry.path().canonicalize()?;
-        if local_path.is_dir() {
+        let path = entry.path();
+        let Some(file_type) = entry.file_type() else {
+            continue;
+        };
+        // The root is always descended into, even when it is a symlink
+        if file_type.is_dir() || entry.depth() == 0 {
             continue;
         }
-        let zip_path = local_path.strip_prefix(&prefix)?;
-        if zip_path.to_str().unwrap().is_empty() {
+        // File symlinks are archived as their content under the link's own
+        // path, since fs::read below follows the link
+        if file_type.is_symlink() && !path.is_file() {
+            eprintln!(
+                "Warning: Skipping {} because it is a symlink that does not point to a file",
+                path.display()
+            );
             continue;
         }
-        if zip_path.to_str().unwrap() == ".florcaignore" {
+        let zip_path = path.strip_prefix(workflow_path)?;
+        if zip_path == Path::new(".florcaignore") {
             continue;
         }
         zip_writer.start_file_from_path(zip_path, SimpleFileOptions::default())?;
-        let bytes = fs::read(&local_path)?;
+        let bytes = fs::read(path)?;
         zip_writer.write_all(&bytes)?;
     }
     zip_writer.finish()?;
@@ -180,6 +190,43 @@ mod tests {
         assert_eq!(zip_reader.len(), 1);
         let file = zip_reader.by_index(0).unwrap();
         assert_eq!(file.name(), "subdir/nested.txt");
+    }
+
+    #[test]
+    fn test_zip_with_file_symlink() {
+        let outside_dir = tempfile::tempdir().unwrap();
+        let target = outside_dir.path().join("shared.ts");
+        fs::write(&target, "shared content").unwrap();
+
+        let dir = tempfile::tempdir().unwrap();
+        std::os::unix::fs::symlink(&target, dir.path().join("linked.ts")).unwrap();
+
+        let zip_path = zip_workflow(dir.path()).unwrap();
+
+        // The target's content is archived under the link's own path
+        let mut zip_reader = ZipArchive::new(File::open(zip_path).unwrap()).unwrap();
+        assert_eq!(zip_reader.len(), 1);
+        let mut file = zip_reader.by_index(0).unwrap();
+        assert_eq!(file.name(), "linked.ts");
+        let mut content = String::new();
+        std::io::Read::read_to_string(&mut file, &mut content).unwrap();
+        assert_eq!(content, "shared content");
+    }
+
+    #[test]
+    fn test_zip_skips_directory_and_broken_symlinks() {
+        let outside_dir = tempfile::tempdir().unwrap();
+
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join("test.txt"), "Hello, world!").unwrap();
+        std::os::unix::fs::symlink(outside_dir.path(), dir.path().join("linked-dir")).unwrap();
+        std::os::unix::fs::symlink("does-not-exist", dir.path().join("broken")).unwrap();
+
+        let zip_path = zip_workflow(dir.path()).unwrap();
+
+        let mut zip_reader = ZipArchive::new(File::open(zip_path).unwrap()).unwrap();
+        assert_eq!(zip_reader.len(), 1);
+        assert_eq!(zip_reader.by_index(0).unwrap().name(), "test.txt");
     }
 
     #[test]
