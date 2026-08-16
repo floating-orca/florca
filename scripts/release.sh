@@ -60,6 +60,7 @@ docker build -f crates/cli/Dockerfile --output dist/build/florca .
 # vendor
 mkdir -p "dist/build/florca/vendor"
 cp -r packages/fn dist/build/florca/vendor
+rm -rf dist/build/florca/vendor/fn/tests
 
 # examples
 cp -r examples dist/build/florca
