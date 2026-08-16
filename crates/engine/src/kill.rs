@@ -30,14 +30,7 @@ impl KillService {
     /// Kills all runs and waits until they are finalized in the database, so
     /// that a shutdown does not leave the rows of killed runs open.
     pub async fn shutdown(&self) {
-        let active: Vec<RunId> = self
-            .process_manager
-            .driver_processes()
-            .read()
-            .await
-            .keys()
-            .copied()
-            .collect();
+        let active = self.process_manager.registered_run_ids().await;
         if let Err(err) = self.kill_runs(AllOrRunId::All).await {
             warn!("Could not kill all driver processes: {err:#}");
         }
@@ -71,14 +64,7 @@ impl KillService {
     pub async fn kill_runs(&self, all_or_run_id: AllOrRunId) -> Result<Vec<RunId>, KillError> {
         match all_or_run_id {
             AllOrRunId::All => {
-                let processes: Vec<(RunId, u32)> = self
-                    .process_manager
-                    .driver_processes()
-                    .read()
-                    .await
-                    .iter()
-                    .map(|(run, driver_process)| (*run, driver_process.pid))
-                    .collect();
+                let processes = self.process_manager.killable().await;
 
                 // Runs are only removed from the map once their process is
                 // killed, so a run whose kill failed can be killed again.
@@ -90,9 +76,8 @@ impl KillService {
                         Err(_) => failed.push(run),
                     }
                 }
-                let mut lock = self.process_manager.driver_processes().write().await;
                 for run in &killed {
-                    lock.remove(run);
+                    self.process_manager.remove(*run).await;
                 }
                 if !failed.is_empty() {
                     let failed = failed
@@ -105,20 +90,16 @@ impl KillService {
                 Ok(killed)
             }
             AllOrRunId::RunId(run_id) => {
-                let pid = self
+                let driver_process = self
                     .process_manager
-                    .driver_processes()
-                    .read()
+                    .get(run_id)
                     .await
-                    .get(&run_id)
-                    .map(|driver_process| driver_process.pid)
                     .ok_or(KillError::NotFound(run_id))?;
+                let pid = driver_process
+                    .pid
+                    .ok_or_else(|| anyhow::anyhow!("Run {run_id} is still starting"))?;
                 crate::kill::kill_process_by_pid(pid).await?;
-                self.process_manager
-                    .driver_processes()
-                    .write()
-                    .await
-                    .remove(&run_id);
+                self.process_manager.remove(run_id).await;
                 Ok(vec![run_id])
             }
         }

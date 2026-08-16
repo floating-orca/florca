@@ -50,7 +50,7 @@ impl MessageService {
     ) -> Result<Value, MessageError> {
         let port = self
             .process_manager
-            .get_port_for_run(run_id)
+            .port_of(run_id)
             .await
             .context("No driver process found for run")?;
         let url = if let Some(invocation_id) = invocation_id {
@@ -96,7 +96,7 @@ impl MessageService {
     ) -> Result<String, MessageError> {
         let port = self
             .process_manager
-            .get_port_for_run(run_id)
+            .port_of(run_id)
             .await
             .context("No driver process found for run")?;
         let url = if let Some(invocation_id) = invocation_id {

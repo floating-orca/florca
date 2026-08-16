@@ -1,4 +1,4 @@
-use crate::{process::DriverProcess, process::ProcessManager, repository::EngineRepository};
+use crate::{process::ProcessManager, repository::EngineRepository};
 use anyhow::Result;
 use chrono::Utc;
 use florca_core::run::{RunId, RunRequest};
@@ -29,28 +29,13 @@ impl DriverManager {
         }
     }
 
-    async fn add_pending_driver_process(&self, pid: u32) -> Result<()> {
-        let mut lock = self.process_manager.driver_processes().write().await;
-        lock.insert(self.run_id, DriverProcess { pid, port: None });
-        Ok(())
-    }
-
-    async fn remove_driver_process(&self) -> Result<()> {
-        self.process_manager
-            .driver_processes()
-            .write()
-            .await
-            .remove(&self.run_id);
-        Ok(())
-    }
-
     pub async fn run_workflow(
         self,
         run_request: RunRequest,
         temporary_directory_path: &Path,
     ) -> Result<()> {
         let command_result = self.run_driver(run_request, temporary_directory_path).await;
-        self.remove_driver_process().await?;
+        self.process_manager.remove(self.run_id).await;
         match command_result {
             Ok(command_result) => self.process_driver_process_result(command_result).await?,
             Err(err) => {
@@ -90,7 +75,7 @@ impl DriverManager {
                 self.run_id
             )
         })?;
-        self.add_pending_driver_process(pid).await?;
+        self.process_manager.record_pid(self.run_id, pid).await;
         Ok(command.wait().await?)
     }
 

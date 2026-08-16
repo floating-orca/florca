@@ -195,3 +195,34 @@ impl EngineRepository for SqlxEngineRepository {
         Ok(())
     }
 }
+
+/// For tests that never touch the repository. Every call panics.
+#[cfg(test)]
+#[derive(Debug)]
+pub(crate) struct UnusedRepository;
+
+#[cfg(test)]
+#[async_trait::async_trait]
+impl EngineRepository for UnusedRepository {
+    async fn get_latest_run(&self) -> Result<RunEntity, GetLatestRunError> {
+        unimplemented!()
+    }
+    async fn get_run_by_id(&self, _: RunId) -> Result<RunEntity, GetRunByIdError> {
+        unimplemented!()
+    }
+    async fn get_runs_without_end_time(&self) -> Result<Vec<RunEntity>> {
+        unimplemented!()
+    }
+    async fn new_run(&self, _: &RunRequest, _: DateTime<Utc>) -> Result<RunId> {
+        unimplemented!()
+    }
+    async fn get_invocations(&self, _: RunId) -> Result<Vec<InvocationEntity>> {
+        unimplemented!()
+    }
+    async fn insert_invocations(&self, _: Vec<InvocationEntity>) -> Result<()> {
+        unimplemented!()
+    }
+    async fn finalize_run(&self, _: bool, _: RunId, _: &Value, _: DateTime<Utc>) -> Result<()> {
+        unimplemented!()
+    }
+}

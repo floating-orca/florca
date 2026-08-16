@@ -51,6 +51,9 @@ impl RunService {
             ));
         }
         let run_id = self.repository.new_run(&run_request, Utc::now()).await?;
+        // Register the run before returning its ID, so a status poll cannot
+        // catch the gap between the run row and the spawned driver process
+        self.process_manager.register(run_id).await;
         let driver_manager = DriverManager::new(
             run_id,
             self.process_manager.clone(),
@@ -69,11 +72,9 @@ impl RunService {
     }
 
     pub async fn report_readiness(&self, run_id: RunId, port: u16) -> Result<(), ReportError> {
-        let mut lock = self.process_manager.driver_processes().write().await;
-        let driver_process = lock
-            .get_mut(&run_id)
-            .ok_or_else(|| ReportError::NotFound(run_id))?;
-        driver_process.port = Some(port);
+        if !self.process_manager.record_port(run_id, port).await {
+            return Err(ReportError::NotFound(run_id));
+        }
         Ok(())
     }
 
@@ -84,7 +85,7 @@ impl RunService {
     ) -> Result<Value, RunWorkflowError> {
         let port = self
             .process_manager
-            .get_port_for_run(run_id)
+            .port_of(run_id)
             .await
             .context("No driver process found for run")?;
         let url = format!("http://127.0.0.1:{port}/invoke");

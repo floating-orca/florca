@@ -83,14 +83,7 @@ impl InspectionService {
 
     async fn status_of_run(&self, run: &RunEntity) -> Result<RunStatus> {
         let mut success = run.success;
-        if success.is_none()
-            && !self
-                .process_manager
-                .driver_processes()
-                .read()
-                .await
-                .contains_key(&run.id)
-        {
+        if success.is_none() && !self.process_manager.is_registered(run.id).await {
             success = Some(false);
         }
         let status = match success {
@@ -172,4 +165,48 @@ fn build_inspection_entry(
         .transpose()?;
 
     Ok(InspectionEntry::new(invocation, child_entries, next_entry))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::repository::UnusedRepository;
+    use chrono::Utc;
+    use florca_core::run::RunEntity;
+    use serde_json::json;
+
+    fn open_run(run_id: RunId) -> RunEntity {
+        RunEntity {
+            id: run_id,
+            deployment_name: "test".into(),
+            entry_point: "start".into(),
+            input: json!({}),
+            output: None,
+            start_time: Utc::now(),
+            end_time: None,
+            success: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn test_open_run_with_registered_driver_is_running() {
+        let process_manager = Arc::new(ProcessManager::new());
+        let service = InspectionService::new(Arc::new(UnusedRepository), process_manager.clone());
+        let run_id = RunId::new(1);
+
+        // Registered without a pid, as right after run creation
+        process_manager.register(run_id).await;
+
+        let status = service.status_of_run(&open_run(run_id)).await.unwrap();
+        assert!(matches!(status, RunStatus::Running));
+    }
+
+    #[tokio::test]
+    async fn test_open_run_without_registered_driver_is_error() {
+        let process_manager = Arc::new(ProcessManager::new());
+        let service = InspectionService::new(Arc::new(UnusedRepository), process_manager);
+
+        let status = service.status_of_run(&open_run(RunId::new(1))).await.unwrap();
+        assert!(matches!(status, RunStatus::Error));
+    }
 }

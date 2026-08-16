@@ -25,10 +25,10 @@ impl PsService {
 impl PsService {
     pub async fn get_running_workflows(&self) -> Result<Vec<RunningWorkflow>> {
         let runs = self.repository.get_runs_without_end_time().await?;
-        let driver_processes = self.process_manager.driver_processes().read().await;
+        let registered_run_ids = self.process_manager.registered_run_ids().await;
         let running_workflows = runs
             .into_iter()
-            .filter(|run| driver_processes.contains_key(&run.id))
+            .filter(|run| registered_run_ids.contains(&run.id))
             .map(|run| RunningWorkflow {
                 run_id: run.id,
                 name: run.deployment_name,
