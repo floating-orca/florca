@@ -4,11 +4,11 @@
 
 <div class="warning">
 
-**Currently, one instance of _FloatingOrca_ is not meant to be shared by multiple users.** This is because neither the engine nor the deployer have any proper authentication or authorization mechanisms in place.
+**Currently, one instance of _FloatingOrca_ is not meant to be shared by multiple users.** This is because neither the engine nor the deployer have any per-user authentication or authorization mechanisms in place.
 
 </div>
 
-The only security measure in place is Basic Authentication configured on the reverse proxy that sits in front of these services.
+The only security measure in place is a single pair of Basic Authentication credentials, enforced by the engine and the deployer on their HTTP endpoints and additionally by the reverse proxy that sits in front of them.
 The sole purpose of this is to prevent unauthorized access to the system when running on a public server.
 The reason for basic authentication is that it is simple to set up and browsers can handle it without any additional configuration.
 

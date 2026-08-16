@@ -24,7 +24,8 @@ pub async fn serve(shared_state: Arc<AppState>) -> Result<()> {
         .route("/", get(list_deployments).post(deploy))
         .route("/{name}", get(fetch_deployment).delete(delete_deployment))
         .with_state(shared_state)
-        .layer(DefaultBodyLimit::disable());
+        .layer(DefaultBodyLimit::disable())
+        .layer(florca_core::http::basic_auth_layer_from_env());
     let port = std::env::var("PORT").unwrap_or_else(|_| "8000".to_string());
     let listener = TcpListener::bind(format!("0.0.0.0:{port}")).await?;
     info!("deployer listening on port {port}");

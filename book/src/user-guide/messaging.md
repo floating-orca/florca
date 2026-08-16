@@ -79,7 +79,7 @@ export async function sendMessageToParent(
 <div class="warning">
 
 You might wonder why we include a `Authorization` header in the request.
-This is because the [Caddy](https://caddyserver.com/) reverse proxy has Basic Auth enabled in our setup.
+This is because the engine requires Basic Auth on its endpoints, as does the [Caddy](https://caddyserver.com/) reverse proxy in front of it.
 See the [Security](./security.md) chapter for more information.
 
 </div>

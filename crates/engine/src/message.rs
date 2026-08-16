@@ -54,9 +54,9 @@ impl MessageService {
             .await
             .context("No driver process found for run")?;
         let url = if let Some(invocation_id) = invocation_id {
-            format!("http://localhost:{}/{}", &port, invocation_id)
+            format!("http://127.0.0.1:{}/{}", &port, invocation_id)
         } else {
-            format!("http://localhost:{}/", &port)
+            format!("http://127.0.0.1:{}/", &port)
         };
         let response = self
             .http_client
@@ -100,9 +100,9 @@ impl MessageService {
             .await
             .context("No driver process found for run")?;
         let url = if let Some(invocation_id) = invocation_id {
-            format!("http://localhost:{}/{}", &port, invocation_id)
+            format!("http://127.0.0.1:{}/{}", &port, invocation_id)
         } else {
-            format!("http://localhost:{}/", &port)
+            format!("http://127.0.0.1:{}/", &port)
         };
         let response = self
             .http_client

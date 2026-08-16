@@ -2,6 +2,13 @@
 
 This chapter provides instructions for self-hosting _FloatingOrca_ on a [Hetzner Cloud](https://www.hetzner.com/cloud/) server.
 
+<div class="warning">
+
+The release ships with default Basic Auth credentials that are publicly known.
+Before exposing a server to the internet, set your own credentials as described in [Basic Authentication](./getting-started.md#basic-authentication).
+
+</div>
+
 Since we don't want Basic Auth credentials and other sensitive information to be sent in plain text to the remote server, we will enable HTTPS.
 More specifically, we will use the `sslip.io` service to create a domain name that points to the server's IP address. When configured correctly, Caddy (our reverse proxy) will automatically obtain a TLS certificate for the domain name and serve the services over HTTPS.
 
@@ -21,7 +28,7 @@ More specifically, we will use the `sslip.io` service to create a domain name th
    - Allow TCP traffic on port `8080`
    - Allow TCP traffic on port `443`
 
-   Do not open any other ports: the deployer, engine, and database ports published by the compose file (`8000`, `8001`, `5432`) bypass the reverse proxy and its Basic Auth. Use the cloud firewall for this, not one running on the server itself (like `ufw`), which Docker's port publishing bypasses.
+   Do not open any other ports: the deployer, engine, and database ports published by the compose file (`8000`, `8001`, `5432`) bypass the reverse proxy and its HTTPS, so anything sent to them (including the Basic Auth credentials) travels unencrypted, and the database is protected only by its password. Use the cloud firewall for this, not one running on the server itself (like `ufw`), which Docker's port publishing bypasses.
 
 4. Note the server's IP address
 

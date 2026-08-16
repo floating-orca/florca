@@ -9,6 +9,7 @@ clap = { workspace = true }
 derive_more = { workspace = true }
 reqwest = { workspace = true }
 secrecy = { workspace = true }
+tower-http = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 sqlx = { workspace = true }

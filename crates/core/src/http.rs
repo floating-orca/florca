@@ -1,6 +1,7 @@
 use reqwest::Url;
 use secrecy::SecretString;
 use std::env;
+use tower_http::validate_request::ValidateRequestHeaderLayer;
 
 #[derive(Debug, Clone)]
 pub struct BasicAuth {
@@ -16,6 +17,8 @@ impl BasicAuth {
         }
     }
 
+    /// An empty `BASIC_AUTH_PASSWORD` counts as not set.
+    ///
     /// # Panics
     ///
     /// Panics if `BASIC_AUTH_USERNAME` is not set or not valid unicode or if `BASIC_AUTH_PASSWORD` is not valid unicode
@@ -24,6 +27,7 @@ impl BasicAuth {
         let username = env::var("BASIC_AUTH_USERNAME")
             .expect("BASIC_AUTH_USERNAME is not set or not valid unicode");
         let password = match env::var("BASIC_AUTH_PASSWORD") {
+            Ok(password) if password.is_empty() => None,
             Ok(password) => Some(password),
             Err(env::VarError::NotPresent) => None,
             Err(env::VarError::NotUnicode(_)) => panic!("BASIC_AUTH_PASSWORD is not valid unicode"),
@@ -98,6 +102,24 @@ impl EngineUrl {
             .extend(segments);
         url
     }
+}
+
+/// The server-side counterpart of `with_basic_auth_from_env`.
+///
+/// # Panics
+///
+/// Panics if `BASIC_AUTH_USERNAME` or `BASIC_AUTH_PASSWORD` is not set, so a
+/// service cannot start unprotected
+// Deprecated as "too basic", but one shared credential is exactly florca's auth model
+#[expect(deprecated)]
+#[must_use]
+pub fn basic_auth_layer_from_env<ResBody: Default>()
+-> ValidateRequestHeaderLayer<tower_http::auth::require_authorization::Basic<ResBody>> {
+    let basic_auth = BasicAuth::from_env();
+    let password = basic_auth
+        .expose_password()
+        .expect("BASIC_AUTH_PASSWORD is not set");
+    ValidateRequestHeaderLayer::basic(&basic_auth.username, password)
 }
 
 pub trait RequestBuilderExt {

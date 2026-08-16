@@ -26,6 +26,8 @@ services:
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION
       - AWS_ROLE
+      - BASIC_AUTH_USERNAME=${BASIC_AUTH_USERNAME}
+      - BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD}
       - DEPLOYER_DATABASE_URL=postgres://postgres:mysecretpassword@postgres/deployer
       - PORT=8080
     ports:

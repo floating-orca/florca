@@ -37,7 +37,8 @@ pub async fn serve(shared_state: Arc<AppState>) -> Result<()> {
         .route("/{run}", get(message_endpoints::html_from_workflow))
         .route("/{run}", delete(kill_endpoint::kill))
         .with_state(shared_state.clone())
-        .layer(DefaultBodyLimit::disable());
+        .layer(DefaultBodyLimit::disable())
+        .layer(florca_core::http::basic_auth_layer_from_env());
     let port = std::env::var("PORT").unwrap_or_else(|_| "8001".to_string());
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await?;
     info!("engine listening on port {port}");

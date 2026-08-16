@@ -87,7 +87,7 @@ impl RunService {
             .get_port_for_run(run_id)
             .await
             .context("No driver process found for run")?;
-        let url = format!("http://localhost:{port}/invoke");
+        let url = format!("http://127.0.0.1:{port}/invoke");
         let response = self
             .http_client
             .post(url)

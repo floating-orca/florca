@@ -104,6 +104,8 @@ app.onError((err, c) => {
 
 const server = Deno.serve(
   {
+    // Only the engine on the same host talks to the driver
+    hostname: "127.0.0.1",
     port: 0, // Random port
     onListen: (_addr) => {
       // Disables the default "Listening on" message
