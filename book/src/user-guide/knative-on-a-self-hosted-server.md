@@ -44,7 +44,7 @@ The following steps illustrate how you could achieve this on the Hetzner Cloud s
   apt install -y build-essential pkg-config libssl-dev
   ```
 
-- Build the deployer and engine services, and install the CLI:
+- Build the deployer and engine services:
 
   ```bash
   cargo build --release --bin florca-deployer

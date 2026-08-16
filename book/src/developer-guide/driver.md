@@ -12,7 +12,7 @@
 
 - For plugin functions, the driver (dynamically) imports the plugin's TypeScript file and invokes the function exported as `default`.
 - For AWS Lambda functions, the driver makes use of the official AWS SDK for JavaScript.
-- For Knative functions, the driver reads the function's URL from the `functions` table and invokes the function via HTTP.
+- For Knative functions, the driver reads the function's URL from the deployment's `lookup.json` file and invokes the function via HTTP.
 
 ## Evaluation loop
 

@@ -6,8 +6,8 @@ _FloatingOrca_ is composed of several components. The following are the essentia
 
 - `caddy`
 - `postgres`
-- `florca-deployer` with its Dockerfile located at `crates/deployer/Dockerfile`
-- `florca-engine` with its Dockerfile located at `crates/engine/Dockerfile`
+- `ghcr.io/floating-orca/deployer` with its Dockerfile located at `crates/deployer/Dockerfile`
+- `ghcr.io/floating-orca/engine` with its Dockerfile located at `crates/engine/Dockerfile`
 
 There is also a `Dockerfile` for the `florca` CLI located at `crates/cli/Dockerfile`. However, this image's purpose is primarily for building the CLI binary, not for running it in a container.
 

@@ -17,7 +17,7 @@ On both AWS Lambda and Knative, a deployed function is represented by its name, 
 
 ## Redeploying functions
 
-Note that AWS Lambda and Knative functions won't get redeployed if their code hasn't changed. Before any redeployment, the deployer first computes a hash of the function's code and compares it to the one stored in the `deployments` table during the last deployment. Only if the hashes differ, the function will be redeployed.
+Note that AWS Lambda and Knative functions won't get redeployed if their code hasn't changed. Before any redeployment, the deployer first computes a hash of the function's code and compares it to the one stored in the `functions` table during the last deployment. Only if the hashes differ, the function will be redeployed.
 
 For this reason, you should also avoid connecting different deployer instances to the same AWS account or Knative cluster, as they will not be aware of each other's deployments.
 

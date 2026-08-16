@@ -13,7 +13,7 @@ In the [previous chapter](./messaging.md), we learned how to register a message 
 
 In this chapter, we'll learn how to use such a workflow-level message handler to expose an HTTP endpoint that can be used to interact with the workflow from the outside.
 
-You may have noticed that when you run a workflow, the engine prints a URL to the console. This URL is the endpoint that you can use to interact with a registered workflow-level message handler.
+You may have noticed that when you run a workflow, the CLI prints a URL to the console. This URL is the endpoint that you can use to interact with a registered workflow-level message handler.
 
 You can use this to send some JSON data to the workflow, for example, or to render an HTML form, as shown in the example below.
 
@@ -22,7 +22,7 @@ Currently, there are separate endpoints for sending JSON and retrieving HTML, re
 - `POST /{run}`: Takes a JSON payload and responds with a JSON payload.
 - `GET /{run}`: Takes no payload or parameters and responds with an HTML payload.
 
-_Side note: If you'd like to request HTML from a specific function, you can send a request to `GET /{run}/{invocationNumber}`. Just note that this will target the message handler set via `context.onMessage`, not the workflow-level message handler set via `context.onWorkflowMessage`._
+_Side note: If you'd like to request HTML from a specific function, you can send a request to `GET /{run}/{invocationId}`. Just note that this will target the message handler set via `context.onMessage`, not the workflow-level message handler set via `context.onWorkflowMessage`._
 
 ## HTML
 

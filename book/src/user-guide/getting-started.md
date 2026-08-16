@@ -10,7 +10,7 @@ To get started, you need:
 
 ## Limitations
 
-So far, _FloatingOrca_ has only been tested on [Fedora Linux](https://fedoraproject.org/) 42, with all instructions tailored to this environment.
+So far, _FloatingOrca_ has only been tested on [Fedora Linux](https://fedoraproject.org/) 44, with all instructions tailored to this environment.
 
 In case you are using a different operating system, you may need to adjust the instructions accordingly.
 Especially networking often behaves differently on other operating systems, which may require changes to the configuration.

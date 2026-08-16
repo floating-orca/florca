@@ -61,7 +61,7 @@ The following steps illustrate how you could achieve this on the server we set u
     builder: s2i
   ```
 
-- Build the deployer and engine services, and install the CLI:
+- Build the deployer and engine services:
 
   ```bash
   cargo build --release --bin florca-deployer

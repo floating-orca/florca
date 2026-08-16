@@ -4,7 +4,7 @@ The `cli` crate provides the `florca` binary—a command-line interface for crea
 
 It's implemented in Rust and communicates with other components via HTTP.
 
-The various commands and their options are defined in `crates/cli/src/cli.rs` using the [`clap`](https://docs.rs/clap/latest/clap/) library.
+The commands are enumerated in `crates/cli/src/cli.rs`, with each command and its options defined in `crates/cli/src/command/`, using the [`clap`](https://docs.rs/clap/latest/clap/) library.
 If you want to add a new command, make sure you adapt `crates/cli/src/lib.rs` accordingly.
 
 ## Note on `florca run --wait`
