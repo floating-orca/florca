@@ -7,15 +7,25 @@ export class EventBatcher implements EventSink {
   private readonly runId: RunId;
   private readonly maxBatchSize: number;
   private readonly flushIntervalMs: number;
+  private readonly finalFlushDelaysMs: number[];
 
   private batch: DriverEvent[] = [];
   private flushTimer: ReturnType<typeof setTimeout> | null = null;
   private flushChain: Promise<void> = Promise.resolve();
 
-  constructor(runId: RunId, maxBatchSize = 100, flushIntervalMs = 100) {
+  constructor(
+    runId: RunId,
+    options: {
+      maxBatchSize?: number;
+      flushIntervalMs?: number;
+      finalFlushDelaysMs?: number[];
+    } = {},
+  ) {
     this.runId = runId;
-    this.maxBatchSize = maxBatchSize;
-    this.flushIntervalMs = flushIntervalMs;
+    this.maxBatchSize = options.maxBatchSize ?? 100;
+    this.flushIntervalMs = options.flushIntervalMs ?? 100;
+    this.finalFlushDelaysMs = options.finalFlushDelaysMs ??
+      [250, 500, 1000, 2000];
   }
 
   addEvent(event: DriverEvent): void {
@@ -43,6 +53,24 @@ export class EventBatcher implements EventSink {
     });
 
     await this.flushChain;
+  }
+
+  // Failed sends have no later delivery to wait for here, so retry with
+  // backoff and report what could not be delivered
+  async finalFlush(): Promise<void> {
+    await this.flush();
+    for (const delayMs of this.finalFlushDelaysMs) {
+      if (this.batch.length === 0) {
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      await this.flush();
+    }
+    if (this.batch.length > 0) {
+      console.error(
+        `${this.batch.length} event(s) could not be delivered, the inspection of run ${this.runId} is incomplete.`,
+      );
+    }
   }
 
   private clearFlushTimer(): void {

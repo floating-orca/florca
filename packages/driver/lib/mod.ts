@@ -88,7 +88,7 @@ export async function completeRun(
   driverResult: DriverResult,
 ): Promise<void> {
   // Flush any remaining events before signaling completion
-  await eventSink.flush();
+  await eventSink.finalFlush();
 
   const url = `${env.getEngineUrl()}/${runId}/complete`;
   const response = await fetch(url, {
