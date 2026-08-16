@@ -11,7 +11,7 @@
 
 set -Eeuo pipefail
 
-version=0.10.0 # Update for each release
+version=0.11.0 # Update for each release
 
 read -rp "Enter your GitHub username: " username
 read -srp "Enter your GitHub personal access token (classic) with 'write:packages' and 'delete:packages' scopes: " personal_access_token

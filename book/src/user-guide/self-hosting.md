@@ -65,7 +65,7 @@ More specifically, we will use the `sslip.io` service to create a domain name th
 10. Get the release asset:
 
     ```bash
-    export VERSION=<florca-version> # e.g., 0.10.0
+    export VERSION=<florca-version> # e.g., 0.11.0
     curl -LO "https://github.com/floating-orca/florca/releases/download/v${VERSION}/florca-${VERSION}-linux-amd64.tar.gz"
     ```
 

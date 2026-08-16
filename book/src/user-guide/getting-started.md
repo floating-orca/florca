@@ -106,8 +106,8 @@ Finally, make sure that the rootless Docker daemon is allowed to bind to port `4
 Pull the pre-built Docker images:
 
 ```bash
-docker pull ghcr.io/floating-orca/deployer:0.10.0
-docker pull ghcr.io/floating-orca/engine:0.10.0
+docker pull ghcr.io/floating-orca/deployer:0.11.0
+docker pull ghcr.io/floating-orca/engine:0.11.0
 ```
 
 ## Run the services
