@@ -1,5 +1,6 @@
 {
   "workspace": ["./packages/fn", "./packages/driver", "./packages/types"],
+  "exclude": ["dist"],
   "lint": {
     "rules": {
       "exclude": ["no-explicit-any", "no-import-prefix", "require-await"]
