@@ -2,6 +2,11 @@
 
 This document lists limitations that are not mentioned elsewhere in the documentation.
 
+## Design limitations
+
+- Functions belong to one deployment
+  - A self-contained function can be reused by copying it into another workflow
+
 ## Non-goals
 
 - Raw performance

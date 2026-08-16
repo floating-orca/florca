@@ -8,7 +8,7 @@ For now, we won't bother about AWS Lambda functions but implement the workflow w
 Plugin functions (or simply plugins) are functions that are evaluated directly by the process that drives the workflow.
 This means they run in the same Deno runtime and can only be written in TypeScript or JavaScript.
 
-Compared remotely executed AWS Lambda functions, e.g., they ...
+Compared to remotely executed AWS Lambda functions, e.g., they ...
 
 - can invoke other functions in a nested fashion,
 - can register message handlers to receive messages from other functions,
@@ -23,6 +23,16 @@ Usually they are used for ...
 - simple tasks where the overhead of a remote function is not justified.
 
 Finally, they are really easy to write and deploy and thus perfect for getting started.
+
+In short, the two kinds of functions compare as follows:
+
+|                  | Plugin functions           | Remote functions                          |
+| ---------------- | -------------------------- | ----------------------------------------- |
+| Run on           | the workflow engine itself | AWS Lambda, Knative                       |
+| Language         | TypeScript/JavaScript      | any supported runtime (Python, Node.js)   |
+| Child functions  | `context.run`              | the engine's `/invoke` endpoint           |
+| Message handlers | yes                        | no, sending only                          |
+| Overhead         | negligible, in-process     | a full FaaS invocation                    |
 
 ## Create a new workflow
 

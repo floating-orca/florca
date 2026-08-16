@@ -6,7 +6,9 @@ Another way to control the flow of the workflow is to run a child function from 
 
 <div class="warning">
 
-Note that only plugin functions can run child functions. [AWS Lambda functions](./aws-lambda-functions.md) cannot run child functions.
+Note that the `context.run` method described below is available to plugin functions only.
+Remote functions like [AWS Lambda functions](./aws-lambda-functions.md) can still invoke child functions through the engine's `/invoke` endpoint.
+There is no packaged helper for this yet, but the `examples/remote-invocation` workflow contains small `run` helpers for AWS Lambda and Knative functions.
 
 </div>
 

@@ -2,6 +2,10 @@
 
 This guide will show you how to incorporate AWS Lambda functions into your workflows.
 
+You don't have to start with them, though.
+Since plugin functions run locally, it's often easiest to prototype the entire workflow with plugins and then migrate individual functions to AWS Lambda as the need arises.
+The workflow's structure doesn't change, only a function's location does.
+
 <div class="warning">
 
 **Be aware of potential costs when using AWS Lambda functions!**
@@ -139,8 +143,10 @@ Workflow: aws-example
 ## Limitations
 
 In _FloatingOrca_, AWS Lambda functions can neither register message handlers nor expose HTTP endpoints.
+They can still send messages and receive replies, so a Lambda function can poll a plugin function for data.
 
-Furthermore, they can not run child functions using the `context.run` method.
+Furthermore, they can not use the `context.run` method available to plugins.
+They can still run child functions through the engine's `/invoke` endpoint, as shown by the `run` helpers in the `examples/remote-invocation` workflow.
 
 Also note that the engine must be publicly accessible (or at least in the same network) for AWS Lambda functions to be able to send messages to other functions.
 While there should be a couple of ways to achieve this, the only one tested so far is to host the engine on a public server and let a domain name point to it.

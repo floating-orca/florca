@@ -11,6 +11,7 @@
 - [Parallel execution](./user-guide/parallel-execution.md)
 - [Workflow input](./user-guide/workflow-input.md)
 - [Messaging](./user-guide/messaging.md)
+- [Error handling](./user-guide/error-handling.md)
 - [Expose an HTTP endpoint](./user-guide/expose-an-http-endpoint.md)
 - [Security](./user-guide/security.md)
 - [AWS Lambda functions](./user-guide/aws-lambda-functions.md)
