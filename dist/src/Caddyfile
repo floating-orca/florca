@@ -20,6 +20,6 @@ http://engine.florca.localhost:8080, http://engine.*.sslip.io:8080 {
 
 # Fallback
 http://, https:// {
-  log
-  respond 418
+	log
+	respond 418
 }
