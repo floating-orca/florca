@@ -64,6 +64,7 @@ impl Deployer {
     ) -> Result<(), DeployError> {
         let functions_to_deploy: Vec<FunctionToDeploy> =
             crate::detect::detect_functions(source_deployment_path).await?;
+        validate_kn_names(deployment_name, &functions_to_deploy)?;
 
         let existing_deployment = self.repository.get_deployment(deployment_name).await?;
         let previous_function_entities = match &existing_deployment {
@@ -244,4 +245,78 @@ fn extract_zip(zip_file: &File) -> Result<TempDir, DeployError> {
         .extract(temp_deployment_dir.path())
         .context("Failed to extract zip file")?;
     Ok(temp_deployment_dir)
+}
+
+// Knative service names are DNS labels, which allow no underscores.
+fn validate_kn_names(
+    deployment_name: &DeploymentName,
+    functions_to_deploy: &[FunctionToDeploy],
+) -> Result<(), DeployError> {
+    for function_to_deploy in functions_to_deploy {
+        let FunctionToDeploy::Remote(remote) = function_to_deploy else {
+            continue;
+        };
+        if !matches!(remote.config, FunctionConfig::Kn(_)) {
+            continue;
+        }
+        if remote.name.as_ref().contains('_') {
+            return Err(DeployError::InvalidName(format!(
+                "Knative function name {} must not contain underscores",
+                remote.name
+            )));
+        }
+        if deployment_name.as_ref().contains('_') {
+            return Err(DeployError::InvalidName(format!(
+                "Deployment name {deployment_name} must not contain underscores when deploying Knative functions"
+            )));
+        }
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::detect::RemoteFunctionToDeploy;
+    use florca_core::function::{AwsFunctionConfig, KnFunctionConfig};
+
+    fn function(name: &str, config: FunctionConfig) -> FunctionToDeploy {
+        FunctionToDeploy::Remote(RemoteFunctionToDeploy {
+            name: name.into(),
+            path: "unused".into(),
+            hash: String::new(),
+            config,
+        })
+    }
+
+    fn kn_function(name: &str) -> FunctionToDeploy {
+        function(
+            name,
+            FunctionConfig::Kn(KnFunctionConfig {
+                runtime: "python".to_string(),
+            }),
+        )
+    }
+
+    #[test]
+    fn test_underscores_are_rejected_for_kn_functions() {
+        let valid = vec![kn_function("fetchData")];
+        assert!(validate_kn_names(&"demo".into(), &valid).is_ok());
+        assert!(validate_kn_names(&"my_demo".into(), &valid).is_err());
+
+        let invalid = vec![kn_function("my_func")];
+        assert!(validate_kn_names(&"demo".into(), &invalid).is_err());
+
+        // AWS functions may keep their underscores
+        let aws = vec![function(
+            "my_func",
+            FunctionConfig::Aws(AwsFunctionConfig {
+                runtime: "nodejs24.x".to_string(),
+                handler: "index.handler".to_string(),
+                memory: 128,
+                timeout: 3,
+            }),
+        )];
+        assert!(validate_kn_names(&"my_demo".into(), &aws).is_ok());
+    }
 }

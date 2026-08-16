@@ -110,6 +110,10 @@ impl IntoResponse for DeployError {
                 )
                     .into_response()
             }
+            DeployError::InvalidName(message) => {
+                warn!("{message}");
+                (StatusCode::BAD_REQUEST, message.clone()).into_response()
+            }
             DeployError::Io(err) => {
                 error!("{:?}", err);
                 (

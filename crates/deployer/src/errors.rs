@@ -9,6 +9,8 @@ pub struct ListDeploymentsError(#[from] pub anyhow::Error);
 pub enum DeployError {
     #[error("Invalid function config")]
     InvalidFunctionConfig(toml::de::Error, PathBuf),
+    #[error("{0}")]
+    InvalidName(String),
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error(transparent)]
