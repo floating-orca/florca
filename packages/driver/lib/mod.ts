@@ -84,7 +84,7 @@ export async function runWorkflow(
 }
 
 // Nothing awaits these invocations anymore, so record them as abandoned
-function abandonInFlightInvocations(driverState: DriverState) {
+export function abandonInFlightInvocations(driverState: DriverState) {
   for (const [invocationId, inFlight] of driverState.inFlightInvocations) {
     driverState.eventSink.addEvent(
       newAbandonedEvent(inFlight.args, invocationId, inFlight.startTime),

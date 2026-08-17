@@ -17,10 +17,13 @@ DEPLOYMENT="${EXAMPLE}-test"
 
   run florca kill "$run_id"
   assert_output "Killed run $run_id"
+  sleep 1
 
-  run florca inspect "$run_id"
+  run florca inspect "$run_id" --show-outputs
   assert_output --partial 'Success: false'
   assert_output --partial 'Error: Driver process was killed'
+  # The invocation that was in flight when the run was killed
+  assert_output --partial 'Abandoned'
 }
 
 @test "kill all runs" {

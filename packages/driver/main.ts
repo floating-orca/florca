@@ -1,6 +1,7 @@
 import { type Context, Hono } from "@hono/hono";
 import type { DriverArgs, InvocationId, InvokeChildArgs } from "@florca/types";
 import {
+  abandonInFlightInvocations,
   completeRun,
   gatherLookupEntries,
   reportAvailabilityToEngine,
@@ -35,6 +36,19 @@ const driverState: DriverState = {
   workflowLogger,
   lambdaClients: new Map(),
 };
+
+// A killed run still records what was in flight. It must then die by the
+// signal, since only that makes the engine finalize the run as killed.
+const onSigterm = async () => {
+  try {
+    abandonInFlightInvocations(driverState);
+    await eventSink.finalFlush();
+  } finally {
+    Deno.removeSignalListener("SIGTERM", onSigterm);
+    Deno.kill(Deno.pid, "SIGTERM");
+  }
+};
+Deno.addSignalListener("SIGTERM", onSigterm);
 
 const app = new Hono();
 
