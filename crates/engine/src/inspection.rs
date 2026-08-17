@@ -76,8 +76,8 @@ impl InspectionService {
     async fn build_inspection(&self, run: RunEntity) -> Result<Inspection, GetInspectionError> {
         let status = self.status_of_run(&run).await?;
         let invocations = self.repository.get_invocations(run.id).await?;
-        let root_entry = build_inspection_root(&invocations)?;
-        let inspection = Inspection::new(run, root_entry, status);
+        let root = build_inspection_root(&invocations)?;
+        let inspection = Inspection::new(run, root, status);
         Ok(inspection)
     }
 
@@ -95,7 +95,7 @@ impl InspectionService {
     }
 }
 
-fn build_inspection_root(invocations: &[InvocationEntity]) -> Result<Option<InspectionEntry>> {
+fn build_inspection_root(invocations: &[InvocationEntity]) -> Result<Vec<InspectionEntry>> {
     let mut by_id: HashMap<InvocationId, &InvocationEntity> =
         HashMap::with_capacity(invocations.len());
     let mut children_by_parent: HashMap<InvocationId, Vec<InvocationId>> = HashMap::new();
@@ -124,47 +124,38 @@ fn build_inspection_root(invocations: &[InvocationEntity]) -> Result<Option<Insp
         }
     }
 
-    root_invocation_id
-        .map(|invocation_id| {
-            build_inspection_entry(
-                invocation_id,
-                &by_id,
-                &children_by_parent,
-                &next_by_predecessor,
-            )
-        })
-        .transpose()
+    match root_invocation_id {
+        Some(invocation_id) => {
+            build_chain(invocation_id, &by_id, &children_by_parent, &next_by_predecessor)
+        }
+        None => Ok(Vec::new()),
+    }
 }
 
-fn build_inspection_entry(
-    invocation_id: InvocationId,
+// Chains are built iteratively, so their length cannot overflow the stack
+fn build_chain(
+    start_id: InvocationId,
     by_id: &HashMap<InvocationId, &InvocationEntity>,
     children_by_parent: &HashMap<InvocationId, Vec<InvocationId>>,
     next_by_predecessor: &HashMap<InvocationId, InvocationId>,
-) -> Result<InspectionEntry> {
-    let invocation = by_id
-        .get(&invocation_id)
-        .copied()
-        .context("missing invocation while building inspection graph")?;
-
-    let child_entries = children_by_parent
-        .get(&invocation_id)
-        .into_iter()
-        .flatten()
-        .map(|child_id| {
-            build_inspection_entry(*child_id, by_id, children_by_parent, next_by_predecessor)
-        })
-        .collect::<Result<Vec<_>>>()?;
-
-    let next_entry = next_by_predecessor
-        .get(&invocation_id)
-        .map(|next_id| {
-            build_inspection_entry(*next_id, by_id, children_by_parent, next_by_predecessor)
-                .map(Box::new)
-        })
-        .transpose()?;
-
-    Ok(InspectionEntry::new(invocation, child_entries, next_entry))
+) -> Result<Vec<InspectionEntry>> {
+    let mut chain = Vec::new();
+    let mut current = Some(start_id);
+    while let Some(invocation_id) = current {
+        let invocation = by_id
+            .get(&invocation_id)
+            .copied()
+            .context("missing invocation while building inspection graph")?;
+        let children = children_by_parent
+            .get(&invocation_id)
+            .into_iter()
+            .flatten()
+            .map(|child_id| build_chain(*child_id, by_id, children_by_parent, next_by_predecessor))
+            .collect::<Result<Vec<_>>>()?;
+        chain.push(InspectionEntry::new(invocation, children));
+        current = next_by_predecessor.get(&invocation_id).copied();
+    }
+    Ok(chain)
 }
 
 #[cfg(test)]
@@ -199,6 +190,34 @@ mod tests {
 
         let status = service.status_of_run(&open_run(run_id)).await.unwrap();
         assert!(matches!(status, RunStatus::Running));
+    }
+
+    #[test]
+    fn test_long_chains_survive_build_and_serde() {
+        let mut invocations = Vec::new();
+        let mut predecessor = None;
+        for _ in 0..10_000 {
+            let id = InvocationId::new();
+            invocations.push(InvocationEntity {
+                id,
+                parent: None,
+                predecessor,
+                run_id: RunId::new(1),
+                function_name: "step".into(),
+                input: json!(null),
+                params: json!(null),
+                output: Some(json!(null)),
+                start_time: Utc::now(),
+                end_time: Some(Utc::now()),
+            });
+            predecessor = Some(id);
+        }
+
+        let root = build_inspection_root(&invocations).unwrap();
+        assert_eq!(root.len(), 10_000);
+        let serialized = serde_json::to_string(&root).unwrap();
+        let parsed: Vec<InspectionEntry> = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(parsed.len(), 10_000);
     }
 
     #[tokio::test]

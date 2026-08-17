@@ -18,7 +18,7 @@ pub struct Inspection {
     pub output: Option<Value>,
     pub start_time: DateTime<Utc>,
     pub end_time: Option<DateTime<Utc>>,
-    pub root: Option<InspectionEntry>,
+    pub root: Vec<InspectionEntry>,
     pub run_status: RunStatus,
 }
 
@@ -47,13 +47,13 @@ pub struct InspectionEntry {
     pub output: Option<Value>,
     pub start_time: DateTime<Utc>,
     pub end_time: Option<DateTime<Utc>>,
-    pub children: Vec<InspectionEntry>,
-    pub next: Option<Box<InspectionEntry>>,
+    /// The child branches, each a chain of consecutive invocations
+    pub children: Vec<Vec<InspectionEntry>>,
 }
 
 impl Inspection {
     #[must_use]
-    pub fn new(run: RunEntity, root: Option<InspectionEntry>, status: RunStatus) -> Self {
+    pub fn new(run: RunEntity, root: Vec<InspectionEntry>, status: RunStatus) -> Self {
         Inspection {
             run_id: run.id,
             deployment_name: run.deployment_name,
@@ -70,11 +70,7 @@ impl Inspection {
 
 impl InspectionEntry {
     #[must_use]
-    pub fn new(
-        invocation: &InvocationEntity,
-        children: Vec<InspectionEntry>,
-        next: Option<Box<InspectionEntry>>,
-    ) -> Self {
+    pub fn new(invocation: &InvocationEntity, children: Vec<Vec<InspectionEntry>>) -> Self {
         Self {
             invocation_id: invocation.id,
             function_name: invocation.function_name.clone(),
@@ -84,7 +80,6 @@ impl InspectionEntry {
             start_time: invocation.start_time,
             end_time: invocation.end_time,
             children,
-            next,
         }
     }
 }

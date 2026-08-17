@@ -47,23 +47,24 @@ The response will look something like this:
   "output": "Bob",
   "startTime": "2025-06-28T15:54:05.693274Z",
   "endTime": "2025-06-28T15:54:58.943966Z",
-  "root": {
-    "invocationId": "f847e5a5-9b7b-4ba0-8f4d-c0e6d2720a17",
-    "functionName": "start",
-    "input": null,
-    "params": null,
-    "output": {
-      "payload": "Bob"
-    },
-    "startTime": "2025-06-28T15:54:05.842Z",
-    "endTime": "2025-06-28T15:54:58.923Z",
-    "children": [],
-    "next": null
-  },
+  "root": [
+    {
+      "invocationId": "f847e5a5-9b7b-4ba0-8f4d-c0e6d2720a17",
+      "functionName": "start",
+      "input": null,
+      "params": null,
+      "output": {
+        "payload": "Bob"
+      },
+      "startTime": "2025-06-28T15:54:05.842Z",
+      "endTime": "2025-06-28T15:54:58.923Z",
+      "children": []
+    }
+  ],
   "runStatus": "success"
 }
 ```
 
 While the workflow is running, `runStatus` will be `running`. If the workflow failed, it will be `error` and `output` will contain details about the error.
 
-Also note the `children` array and `next` field in the `root` object. If present, they would be structured the same way as the `root` object. `root` essentially represents the entry point invocation of the workflow run.
+`root` is the chain of invocations starting at the entry point: a function that hands off via `next` appends its successor as the next array entry. Each entry's `children` array holds the branches invoked as children, each itself such a chain.

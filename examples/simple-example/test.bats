@@ -10,7 +10,7 @@ DEPLOYMENT="${EXAMPLE}-test"
   florca deploy -w "$BATS_TEST_DIRNAME" "$DEPLOYMENT"
   run florca run -d "$DEPLOYMENT" --wait --json
   message=$(echo "$output" | jq -r '.output')
-  number=$(echo "$output" | jq '.root.output.payload')
+  number=$(echo "$output" | jq '.root[0].output.payload')
   if [ $((number % 2)) -eq 0 ]; then
     assert_equal "$message" "The number ${number} is even."
   else

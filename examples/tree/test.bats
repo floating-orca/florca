@@ -30,7 +30,7 @@ setup() {
   florca deploy -w "$temp_dir" "$DEPLOYMENT"
   run florca run -d "$DEPLOYMENT" -e "process" --wait --json
   local actual
-  actual=$(echo "$output" | jq '.root.output.payload' | jq 'sort')
+  actual=$(echo "$output" | jq '.root[0].output.payload' | jq 'sort')
   assert_equal "$actual" "$EXPECTED"
 }
 
@@ -38,7 +38,7 @@ setup() {
   florca deploy -w "$temp_dir" "$DEPLOYMENT"
   run florca run -d "$DEPLOYMENT" -e "processWithDelay" -i '{ "onAws": false }' --wait --json
   local actual
-  actual=$(echo "$output" | jq '.root.output.payload' | jq 'sort')
+  actual=$(echo "$output" | jq '.root[0].output.payload' | jq 'sort')
   assert_equal "$actual" "$EXPECTED"
 }
 

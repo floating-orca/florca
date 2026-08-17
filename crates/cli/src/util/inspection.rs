@@ -78,8 +78,7 @@ fn inspection_lines(
     }
     let workflow_line = workflow_line(inspection, inspect_display_options);
     lines.push(workflow_line);
-    let root_entry: Vec<&InspectionEntry> = inspection.root.iter().collect();
-    extend_with_entries_lines(&root_entry, 0, false, inspect_display_options, lines)
+    extend_with_chain_lines(&inspection.root, 0, inspect_display_options, lines)
 }
 
 fn workflow_line(
@@ -96,18 +95,17 @@ fn workflow_line(
     line
 }
 
-fn extend_with_entries_lines(
-    entries: &[&InspectionEntry],
+fn extend_with_chain_lines(
+    chain: &[InspectionEntry],
     indent: usize,
-    is_next: bool,
     inspect_display_options: &InspectDisplayOptions,
     mut lines: Vec<String>,
 ) -> Vec<String> {
-    for entry in entries {
+    for (position, entry) in chain.iter().enumerate() {
         let mut line = "  ".repeat(indent)
             + &format!(
                 "{} {}",
-                if is_next { "|" } else { "+" },
+                if position == 0 { "+" } else { "|" },
                 entry.function_name
             );
         line = extend_with_start_time(&line, &entry.start_time);
@@ -125,17 +123,9 @@ fn extend_with_entries_lines(
             line = extend_with_output(&line, v);
         }
         lines.push(line);
-        let child_entries: Vec<&InspectionEntry> = entry.children.iter().collect();
-        lines = extend_with_entries_lines(
-            &child_entries,
-            indent + 1,
-            false,
-            inspect_display_options,
-            lines,
-        );
-        if let Some(next) = &entry.next {
+        for child_chain in &entry.children {
             lines =
-                extend_with_entries_lines(&[next], indent, true, inspect_display_options, lines);
+                extend_with_chain_lines(child_chain, indent + 1, inspect_display_options, lines);
         }
     }
     lines
@@ -217,24 +207,26 @@ Workflow: sequential-map (09:52:01.908+02:00) (09:52:04.339+02:00) (PT2.431S) 2
             ),
             input: json!(2),
             output: Some(json!("1, 2")),
-            root: Some(InspectionEntry {
-                invocation_id: InvocationId::new(),
-                function_name: "start".into(),
-                start_time: DateTime::parse_from_rfc3339("2023-10-01T09:52:02.038+02:00")
-                    .unwrap()
-                    .with_timezone(&Utc),
-                end_time: Some(
-                    DateTime::parse_from_rfc3339("2023-10-01T09:52:02.057+02:00")
+            root: vec![
+                InspectionEntry {
+                    invocation_id: InvocationId::new(),
+                    function_name: "start".into(),
+                    start_time: DateTime::parse_from_rfc3339("2023-10-01T09:52:02.038+02:00")
                         .unwrap()
                         .with_timezone(&Utc),
-                ),
-                input: json!(2),
-                params: Value::Null,
-                output: Some(
-                    json!({"next": {"sequentialMap": {"fn": "addOne", "reduce": "join"}}, "payload": [0, 1]}),
-                ),
-                children: Vec::new(),
-                next: Some(Box::new(InspectionEntry {
+                    end_time: Some(
+                        DateTime::parse_from_rfc3339("2023-10-01T09:52:02.057+02:00")
+                            .unwrap()
+                            .with_timezone(&Utc),
+                    ),
+                    input: json!(2),
+                    params: Value::Null,
+                    output: Some(
+                        json!({"next": {"sequentialMap": {"fn": "addOne", "reduce": "join"}}, "payload": [0, 1]}),
+                    ),
+                    children: Vec::new(),
+                },
+                InspectionEntry {
                     invocation_id: InvocationId::new(),
                     function_name: "sequentialMap".into(),
                     start_time: DateTime::parse_from_rfc3339("2023-10-01T09:52:02.069+02:00")
@@ -249,7 +241,7 @@ Workflow: sequential-map (09:52:01.908+02:00) (09:52:04.339+02:00) (PT2.431S) 2
                     params: json!({"fn": "addOne", "reduce": "join"}),
                     output: Some(json!({"next": "join", "payload": [1, 2]})),
                     children: vec![
-                        InspectionEntry {
+                        vec![InspectionEntry {
                             invocation_id: InvocationId::new(),
                             function_name: "addOne".into(),
                             start_time: DateTime::parse_from_rfc3339(
@@ -266,9 +258,8 @@ Workflow: sequential-map (09:52:01.908+02:00) (09:52:04.339+02:00) (PT2.431S) 2
                             params: Value::Null,
                             output: Some(json!({"payload": 1})),
                             children: Vec::new(),
-                            next: None,
-                        },
-                        InspectionEntry {
+                        }],
+                        vec![InspectionEntry {
                             invocation_id: InvocationId::new(),
                             function_name: "addOne".into(),
                             start_time: DateTime::parse_from_rfc3339(
@@ -285,28 +276,26 @@ Workflow: sequential-map (09:52:01.908+02:00) (09:52:04.339+02:00) (PT2.431S) 2
                             params: Value::Null,
                             output: Some(json!({"payload": 2})),
                             children: Vec::new(),
-                            next: None,
-                        },
+                        }],
                     ],
-                    next: Some(Box::new(InspectionEntry {
-                        invocation_id: InvocationId::new(),
-                        function_name: "join".into(),
-                        start_time: DateTime::parse_from_rfc3339("2023-10-01T09:52:04.267+02:00")
+                },
+                InspectionEntry {
+                    invocation_id: InvocationId::new(),
+                    function_name: "join".into(),
+                    start_time: DateTime::parse_from_rfc3339("2023-10-01T09:52:04.267+02:00")
+                        .unwrap()
+                        .with_timezone(&Utc),
+                    end_time: Some(
+                        DateTime::parse_from_rfc3339("2023-10-01T09:52:04.312+02:00")
                             .unwrap()
                             .with_timezone(&Utc),
-                        end_time: Some(
-                            DateTime::parse_from_rfc3339("2023-10-01T09:52:04.312+02:00")
-                                .unwrap()
-                                .with_timezone(&Utc),
-                        ),
-                        input: json!([1, 2]),
-                        params: Value::Null,
-                        output: Some(json!({"payload": "1, 2"})),
-                        children: Vec::new(),
-                        next: None,
-                    })),
-                })),
-            }),
+                    ),
+                    input: json!([1, 2]),
+                    params: Value::Null,
+                    output: Some(json!({"payload": "1, 2"})),
+                    children: Vec::new(),
+                },
+            ],
         };
         let options = InspectDisplayOptions {
             show_inputs: true,
