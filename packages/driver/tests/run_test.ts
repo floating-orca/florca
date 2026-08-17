@@ -55,6 +55,41 @@ Deno.test("A failure that is not an Error is still reported", async () => {
   });
 });
 
+Deno.test("A failed invocation logs its stack", async () => {
+  const logs: { level: string; message: string; data?: { stack?: string } }[] =
+    [];
+  const loggingState = {
+    runId: 1,
+    lookupTable: [
+      { name: "start", kind: "kn", location: "http://function.invalid" },
+    ],
+    inFlightInvocations: new Map(),
+    eventSink: { addEvent: () => {} },
+    invocationLoggerFactory: {
+      forInvocation: () => ({
+        logEvent: (level: string, message: string, data?: any) => {
+          logs.push({ level, message, data });
+        },
+      }),
+    },
+  } as unknown as DriverState;
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = () => Promise.reject(new Error("boom"));
+  try {
+    await expect(run(invokeArgs, loggingState)).rejects.toThrow("boom");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  const failureLogs = logs.filter((l) => l.message === "Invocation failure");
+  expect(failureLogs).toHaveLength(1);
+  expect(failureLogs[0].level).toBe("ERROR");
+  expect(failureLogs[0].data?.stack).toContain("Error: boom");
+  // A stack has frames, not just the error header
+  expect(failureLogs[0].data?.stack).toContain("    at ");
+});
+
 Deno.test("A sibling still in flight when the workflow fails is recorded as abandoned", async () => {
   const fanOutEvents: DriverEvent[] = [];
   const fanOutState = {

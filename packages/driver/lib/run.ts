@@ -78,6 +78,7 @@ const invoke = async (
     driverState.eventSink.addEvent(
       newFailureEvent(args, invocationId, startTime, describeThrown(e)),
     );
+    logInvocationFailure(args, invocationId, e, driverState);
     throw e;
   } finally {
     driverState.inFlightInvocations.delete(invocationId);
@@ -122,6 +123,21 @@ function logInvocationStart(
   invocationLogger.logEvent("DEBUG", "Invocation start", {
     input: invokeArgs.input,
     params: invokeArgs.params,
+  });
+}
+
+function logInvocationFailure(
+  invokeArgs: InvokeArgs,
+  invocationId: InvocationId,
+  thrown: unknown,
+  driverState: DriverState,
+) {
+  const invocationLogger = driverState.invocationLoggerFactory.forInvocation(
+    invocationId,
+    invokeArgs.functionName,
+  );
+  invocationLogger.logEvent("ERROR", "Invocation failure", {
+    stack: thrown instanceof Error ? thrown.stack : undefined,
   });
 }
 
