@@ -29,6 +29,7 @@ const driverState: DriverState = {
   lookupTable: await gatherLookupEntries(driverArgs.deploymentPath),
   messageHandlers: new Map(),
   workflowMessageHandler: null,
+  inFlightInvocations: new Map(),
   eventSink,
   invocationLoggerFactory,
   workflowLogger,

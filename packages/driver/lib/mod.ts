@@ -5,7 +5,7 @@ import type {
   ReportReadinessRequest,
   RunId,
 } from "@florca/types";
-import { describeThrown, run } from "./run.ts";
+import { describeThrown, newAbandonedEvent, run } from "./run.ts";
 import { resolve } from "@std/path";
 import { getPluginFilePath, namesOfShippedPlugins } from "./functions/mod.ts";
 import type { DriverState } from "./driver_state.ts";
@@ -79,7 +79,18 @@ export async function runWorkflow(
       error: describeThrown(e),
     };
   }
+  abandonInFlightInvocations(driverState);
   return driverResult;
+}
+
+// Nothing awaits these invocations anymore, so record them as abandoned
+function abandonInFlightInvocations(driverState: DriverState) {
+  for (const [invocationId, inFlight] of driverState.inFlightInvocations) {
+    driverState.eventSink.addEvent(
+      newAbandonedEvent(inFlight.args, invocationId, inFlight.startTime),
+    );
+  }
+  driverState.inFlightInvocations.clear();
 }
 
 export async function completeRun(

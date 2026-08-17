@@ -65,6 +65,7 @@ const invoke = async (
   const invocationId: InvocationId = crypto.randomUUID();
   const startTime = Temporal.Now.instant();
   logInvocationStart(args, invocationId, driverState);
+  driverState.inFlightInvocations.set(invocationId, { args, startTime });
   try {
     const invokeFn = getInvokeFn(args.functionName, driverState.lookupTable);
     const response = await invokeFn(args, invocationId, driverState);
@@ -78,6 +79,8 @@ const invoke = async (
       newFailureEvent(args, invocationId, startTime, describeThrown(e)),
     );
     throw e;
+  } finally {
+    driverState.inFlightInvocations.delete(invocationId);
   }
 };
 
@@ -141,6 +144,17 @@ function newSuccessEvent(
     startTime: startTime.toString(),
     endTime: endTime.toString(),
   };
+}
+
+export function newAbandonedEvent(
+  invokeArgs: InvokeArgs,
+  invocationId: InvocationId,
+  startTime: Temporal.Instant,
+): DriverEvent {
+  return newFailureEvent(invokeArgs, invocationId, startTime, {
+    kind: "Abandoned",
+    message: "The workflow ended before this invocation finished",
+  });
 }
 
 function newFailureEvent(

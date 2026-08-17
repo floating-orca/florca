@@ -36,6 +36,9 @@ Error: What a terrible failure!
 
 The `examples/throw` workflow demonstrates this.
 
+Invocations that are still in flight when the run ends are recorded as abandoned in the inspection.
+The `examples/abandon` workflow demonstrates this: a failing branch ends the run while a slow sibling is still in flight.
+
 ## Throwing message handlers
 
 A message handler that throws fails the sender, not the run.
