@@ -148,6 +148,10 @@ They can still send messages and receive replies, so a Lambda function can poll 
 Furthermore, they can not use the `context.run` method available to plugins.
 They can still run child functions through the engine's `/invoke` endpoint, as shown by the `run` helpers in the `examples/remote-invocation` workflow.
 
+If a deployment fails partway, functions that were already created stay behind in your AWS account.
+Deploying again adopts them.
+If you rename functions before retrying, the old ones have to be deleted manually.
+
 Also note that the engine must be publicly accessible (or at least in the same network) for AWS Lambda functions to be able to send messages to other functions.
 While there should be a couple of ways to achieve this, the only one tested so far is to host the engine on a public server and let a domain name point to it.
 See the [Self-hosting chapter](./self-hosting.md) for more information on how to do this.
