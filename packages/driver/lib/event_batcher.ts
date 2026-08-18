@@ -81,9 +81,9 @@ export class EventBatcher implements EventSink {
   }
 
   private async sendEventChunks(events: DriverEvent[]): Promise<void> {
-    const url = `${env.getEngineUrl()}/${this.runId}/events`;
     let nextIndex = 0;
     try {
+      const url = `${env.getEngineUrl()}/${this.runId}/events`;
       while (nextIndex < events.length) {
         const eventChunk = events.slice(
           nextIndex,
@@ -96,6 +96,8 @@ export class EventBatcher implements EventSink {
             Authorization: getAuthorizationHeader(),
           },
           body: JSON.stringify(eventChunk),
+          // An unresponsive engine must not block flushes (or the SIGTERM handler) forever
+          signal: AbortSignal.timeout(10_000),
         });
 
         if (!response.ok) {
