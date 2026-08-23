@@ -35,9 +35,16 @@ impl DriverManager {
         temporary_directory_path: &Path,
     ) -> Result<()> {
         let command_result = self.run_driver(run_request, temporary_directory_path).await;
-        self.process_manager.remove(self.run_id).await;
+        let kill_requested = self
+            .process_manager
+            .remove(self.run_id)
+            .await
+            .is_some_and(|driver_process| driver_process.kill_requested);
         match command_result {
-            Ok(command_result) => self.process_driver_process_result(command_result).await?,
+            Ok(command_result) => {
+                self.process_driver_process_result(command_result, kill_requested)
+                    .await?;
+            }
             Err(err) => {
                 error!(run = %self.run_id, ?err, "Driver process failed to start");
                 self.finalize_run(
@@ -75,11 +82,25 @@ impl DriverManager {
                 self.run_id
             )
         })?;
-        self.process_manager.record_pid(self.run_id, pid).await;
+        if self
+            .process_manager
+            .record_pid(self.run_id, pid)
+            .await
+            .is_some_and(|driver_process| driver_process.kill_requested)
+        {
+            // The run was killed while its process was spawning
+            crate::kill::kill_and_escalate(self.process_manager.clone(), self.run_id, pid)
+                .await
+                .ok();
+        }
         Ok(command.wait().await?)
     }
 
-    async fn process_driver_process_result(&self, command_result: ExitStatus) -> Result<()> {
+    async fn process_driver_process_result(
+        &self,
+        command_result: ExitStatus,
+        kill_requested: bool,
+    ) -> Result<()> {
         let run_id = self.run_id;
 
         if command_result.success() {
@@ -87,7 +108,7 @@ impl DriverManager {
             return Ok(());
         }
 
-        let error_payload = if let Some(15) = command_result.signal() {
+        let error_payload = if kill_requested {
             error!(run = %run_id, "Driver process was killed");
             serde_json::json!({
                 "kind": "DriverProcessKilled",

@@ -9,6 +9,7 @@ use tokio::sync::RwLock;
 pub struct DriverProcess {
     pub pid: Option<u32>,
     pub port: Option<u16>,
+    pub kill_requested: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -30,19 +31,16 @@ impl ProcessManager {
             .insert(run_id, DriverProcess {
                 pid: None,
                 port: None,
+                kill_requested: false,
             });
     }
 
-    pub async fn record_pid(&self, run_id: RunId, pid: u32) {
-        self.driver_processes
-            .write()
-            .await
-            .entry(run_id)
-            .and_modify(|driver_process| driver_process.pid = Some(pid))
-            .or_insert(DriverProcess {
-                pid: Some(pid),
-                port: None,
-            });
+    /// Returns None if the run is not registered
+    pub async fn record_pid(&self, run_id: RunId, pid: u32) -> Option<DriverProcess> {
+        let mut lock = self.driver_processes.write().await;
+        let driver_process = lock.get_mut(&run_id)?;
+        driver_process.pid = Some(pid);
+        Some(driver_process.clone())
     }
 
     /// Returns false if the run is not registered
@@ -57,8 +55,8 @@ impl ProcessManager {
         }
     }
 
-    pub async fn remove(&self, run_id: RunId) {
-        self.driver_processes.write().await.remove(&run_id);
+    pub async fn remove(&self, run_id: RunId) -> Option<DriverProcess> {
+        self.driver_processes.write().await.remove(&run_id)
     }
 
     pub async fn get(&self, run_id: RunId) -> Option<DriverProcess> {
@@ -73,8 +71,28 @@ impl ProcessManager {
         self.driver_processes.read().await.keys().copied().collect()
     }
 
-    /// Skips runs without a pid, which are still spawning their process
-    pub async fn killable(&self) -> Vec<(RunId, u32)> {
+    /// Returns None if the run is not registered. A run without a pid is
+    /// killed by the `DriverManager` once its pid is recorded.
+    pub async fn mark_kill_requested(&self, run_id: RunId) -> Option<DriverProcess> {
+        let mut lock = self.driver_processes.write().await;
+        let driver_process = lock.get_mut(&run_id)?;
+        driver_process.kill_requested = true;
+        Some(driver_process.clone())
+    }
+
+    /// Marks every registered run and returns each with its pid
+    pub async fn mark_all_kill_requested(&self) -> Vec<(RunId, Option<u32>)> {
+        let mut lock = self.driver_processes.write().await;
+        lock.iter_mut()
+            .map(|(run, driver_process)| {
+                driver_process.kill_requested = true;
+                (*run, driver_process.pid)
+            })
+            .collect()
+    }
+
+    /// The registered runs that already have a process
+    pub async fn pids(&self) -> Vec<(RunId, u32)> {
         self.driver_processes
             .read()
             .await

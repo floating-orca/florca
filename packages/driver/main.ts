@@ -38,7 +38,8 @@ const driverState: DriverState = {
 };
 
 // A killed run still records what was in flight. It must then die by the
-// signal, since only that makes the engine finalize the run as killed.
+// signal, since a killed run never reports completion and a clean exit
+// would leave the run row open.
 const onSigterm = async () => {
   try {
     abandonInFlightInvocations(driverState);
