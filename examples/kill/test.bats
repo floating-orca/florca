@@ -34,6 +34,8 @@ DEPLOYMENT="${EXAMPLE}-test"
 
   run florca kill --all
   assert_output --partial 'Killed runs'
+  # Killed runs stay listed until their processes exit
+  sleep 1
 
   run florca ps
   assert_output '[]'

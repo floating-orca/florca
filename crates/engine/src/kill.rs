@@ -61,13 +61,14 @@ impl KillService {
         }
     }
 
+    /// Killing only signals the process. The run leaves the map when the
+    /// engine sees the exit (`DriverManager`), so a killed run reports
+    /// Running until it dies and a failed kill can be retried.
     pub async fn kill_runs(&self, all_or_run_id: AllOrRunId) -> Result<Vec<RunId>, KillError> {
         match all_or_run_id {
             AllOrRunId::All => {
                 let processes = self.process_manager.killable().await;
 
-                // Runs are only removed from the map once their process is
-                // killed, so a run whose kill failed can be killed again.
                 let mut killed = Vec::new();
                 let mut failed = Vec::new();
                 for (run, pid) in processes {
@@ -75,9 +76,6 @@ impl KillService {
                         Ok(()) => killed.push(run),
                         Err(_) => failed.push(run),
                     }
-                }
-                for run in &killed {
-                    self.process_manager.remove(*run).await;
                 }
                 if !failed.is_empty() {
                     let failed = failed
@@ -99,7 +97,6 @@ impl KillService {
                     .pid
                     .ok_or_else(|| anyhow::anyhow!("Run {run_id} is still starting"))?;
                 crate::kill::kill_process_by_pid(pid).await?;
-                self.process_manager.remove(run_id).await;
                 Ok(vec![run_id])
             }
         }
@@ -118,5 +115,32 @@ pub async fn kill_process_by_pid(pid: u32) -> Result<()> {
             Ok(())
         }
         _ => Err(anyhow::anyhow!("Could not kill process {pid}")),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::repository::UnusedRepository;
+
+    #[tokio::test]
+    async fn test_killed_run_stays_registered_until_its_process_exits() {
+        let process_manager = Arc::new(ProcessManager::new());
+        let service = KillService::new(process_manager.clone(), Arc::new(UnusedRepository));
+        let run_id = RunId::new(1);
+
+        let mut child = tokio::process::Command::new("sleep")
+            .arg("60")
+            .spawn()
+            .unwrap();
+        process_manager.register(run_id).await;
+        process_manager
+            .record_pid(run_id, child.id().unwrap())
+            .await;
+
+        service.kill_runs(AllOrRunId::RunId(run_id)).await.unwrap();
+        assert!(process_manager.get(run_id).await.is_some());
+
+        child.wait().await.unwrap();
     }
 }
